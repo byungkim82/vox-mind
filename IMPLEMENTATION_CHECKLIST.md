@@ -1,8 +1,8 @@
 # Vox Mind - Implementation Checklist
 
 **Last Updated**: 2026-01-01
-**Current Phase**: Phase 0 (Setup)
-**Overall Progress**: 0%
+**Current Phase**: Phase 1 (AI Pipeline)
+**Overall Progress**: 31/166 (18.7%)
 
 ---
 
@@ -49,11 +49,11 @@
   - [x] vox-mind-embeddings 
 
 ### 0.4 프로젝트 구조 설정
-- [ ] 🔴 Next.js 프로젝트 생성
+- [x] 🔴 Next.js 프로젝트 생성
   ```bash
   npx create-next-app@latest vox-mind --typescript --tailwind --app
   ```
-- [ ] 🔴 프로젝트 디렉토리 구조 생성
+- [x] 🔴 프로젝트 디렉토리 구조 생성
   ```
   vox-mind/
   ├── app/                 # Next.js App Router
@@ -63,9 +63,9 @@
   ├── migrations/          # D1 마이그레이션
   └── public/              # 정적 파일
   ```
-- [ ] 🔴 `wrangler.toml` 파일 생성 및 바인딩 설정
-- [ ] 🔴 환경 변수 파일 생성 (`.env.local`, `.dev.vars`)
-- [ ] 🟡 `.gitignore` 업데이트 (API 키, 환경 변수 제외)
+- [x] 🔴 `wrangler.toml` 파일 생성 및 바인딩 설정
+- [x] 🔴 환경 변수 파일 생성 (`.env.local`, `.dev.vars`)
+- [x] 🟡 `.gitignore` 업데이트 (API 키, 환경 변수 제외)
 
 **Deliverables**:
 - ✅ 로컬 개발 환경 완전 설정
@@ -73,7 +73,7 @@
 - ✅ Cloudflare 리소스 생성 완료
 - ✅ `wrangler.toml` 설정 완료
 
-**Progress**: 0 / 14 tasks
+**Progress**: 14 / 14 tasks ✅
 
 ---
 
@@ -84,7 +84,7 @@
 **Branch**: `phase-1-recording`
 
 ### 1.1 D1 데이터베이스 스키마 설정
-- [ ] 🔴 D1 마이그레이션 파일 생성 (`migrations/0001_create_memos_table.sql`)
+- [x] 🔴 D1 마이그레이션 파일 생성 (`migrations/0001_create_memos_table.sql`)
   ```sql
   CREATE TABLE memos (
     id TEXT PRIMARY KEY,
@@ -102,73 +102,73 @@
   CREATE INDEX idx_category ON memos(category);
   CREATE INDEX idx_user_category ON memos(user_id, category);
   ```
-- [ ] 🔴 마이그레이션 실행
+- [x] 🔴 마이그레이션 실행 (로컬)
   ```bash
   wrangler d1 migrations apply vox-mind-db --local
   wrangler d1 migrations apply vox-mind-db --remote
   ```
-- [ ] 🟡 마이그레이션 성공 확인 (`wrangler d1 execute vox-mind-db --command "SELECT * FROM memos"`)
+- [x] 🟡 마이그레이션 성공 확인 (`wrangler d1 execute vox-mind-db --command "SELECT * FROM memos"`)
 
 ### 1.2 Hono.js Workers 백엔드 초기 설정
-- [ ] 🔴 Hono.js 설치
+- [x] 🔴 Hono.js 설치
   ```bash
   npm install hono
   ```
-- [ ] 🔴 `workers/api.ts` 파일 생성 (Hono 앱 초기화)
-- [ ] 🔴 기본 라우트 설정 (GET `/`, GET `/health`)
-- [ ] 🔴 CORS 미들웨어 설정 (Next.js 프론트엔드와 통신용)
-- [ ] 🟡 `wrangler.toml`에 Workers 설정 추가
+- [x] 🔴 `workers/api.ts` 파일 생성 (Hono 앱 초기화)
+- [x] 🔴 기본 라우트 설정 (GET `/`, GET `/health`)
+- [x] 🔴 CORS 미들웨어 설정 (Next.js 프론트엔드와 통신용)
+- [x] 🟡 `wrangler.toml`에 Workers 설정 추가
 - [ ] 🟡 로컬에서 Workers 실행 테스트
   ```bash
   wrangler dev workers/api.ts
   ```
 
 ### 1.3 POST /api/upload 엔드포인트 구현
-- [ ] 🔴 Hono.js에 POST `/api/upload` 라우트 추가
-- [ ] 🔴 Multipart form-data 파싱 (Hono의 `req.parseBody()` 사용)
-- [ ] 🔴 UUID 생성 (`crypto.randomUUID()`)
-- [ ] 🔴 R2에 파일 업로드 로직 구현
+- [x] 🔴 Hono.js에 POST `/api/upload` 라우트 추가
+- [x] 🔴 Multipart form-data 파싱 (Hono의 `req.parseBody()` 사용)
+- [x] 🔴 UUID 생성 (`crypto.randomUUID()`)
+- [x] 🔴 R2에 파일 업로드 로직 구현
   ```typescript
   const fileId = crypto.randomUUID();
   await env.AUDIO_BUCKET.put(`${fileId}.webm`, audioBlob);
   ```
-- [ ] 🔴 업로드 성공 시 `{ fileId, uploadedAt }` 응답
-- [ ] 🟡 에러 핸들링 (파일 크기 제한, 형식 검증)
+- [x] 🔴 업로드 성공 시 `{ fileId, uploadedAt }` 응답
+- [x] 🟡 에러 핸들링 (파일 크기 제한, 형식 검증)
 - [ ] 🟡 Postman/cURL로 업로드 테스트
 
 ### 1.4 외부 AI API 클라이언트 구현
-- [ ] 🔴 `lib/groq-client.ts` 생성 (Groq STT 함수)
+- [x] 🔴 `workers/lib/groq-client.ts` 생성 (Groq STT 함수)
   ```typescript
   async function transcribeAudio(audioBuffer: ArrayBuffer): Promise<string>
   ```
-- [ ] 🔴 `lib/gemini-client.ts` 생성 (Gemini 구조화 함수)
+- [x] 🔴 `workers/lib/gemini-client.ts` 생성 (Gemini 구조화 함수)
   ```typescript
   async function structureMemo(rawText: string): Promise<MemoStructure>
   ```
-- [ ] 🔴 `lib/voyage-client.ts` 생성 (Voyage 임베딩 함수)
+- [x] 🔴 `workers/lib/voyage-client.ts` 생성 (Voyage 임베딩 함수)
   ```typescript
   async function generateEmbedding(text: string): Promise<number[]>
   ```
 - [ ] 🟡 각 클라이언트 함수 단위 테스트 (샘플 데이터로)
-- [ ] 🟡 에러 핸들링 및 재시도 로직 추가
+- [x] 🟡 에러 핸들링 및 재시도 로직 추가
 
 ### 1.5 POST /api/process 엔드포인트 구현
-- [ ] 🔴 POST `/api/process` 라우트 추가
-- [ ] 🔴 R2에서 파일 읽기
+- [x] 🔴 POST `/api/process` 라우트 추가
+- [x] 🔴 R2에서 파일 읽기
   ```typescript
   const file = await env.AUDIO_BUCKET.get(`${fileId}.webm`);
   ```
-- [ ] 🔴 Groq STT 호출 → `rawText` 추출 (→ depends on 1.4)
-- [ ] 🔴 Gemini 구조화 호출 → `{ title, summary, category, action_items }` (→ depends on 1.4)
-- [ ] 🔴 Voyage 임베딩 호출 → `embedding` (→ depends on 1.4)
-- [ ] 🔴 D1에 메모 저장
+- [x] 🔴 Groq STT 호출 → `rawText` 추출 (→ depends on 1.4)
+- [x] 🔴 Gemini 구조화 호출 → `{ title, summary, category, action_items }` (→ depends on 1.4)
+- [x] 🔴 Voyage 임베딩 호출 → `embedding` (→ depends on 1.4)
+- [x] 🔴 D1에 메모 저장
   ```typescript
   await env.DB.prepare(`
     INSERT INTO memos (id, user_id, raw_text, title, summary, category, action_items)
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `).bind(memoId, 'temp-user', rawText, title, summary, category, JSON.stringify(action_items)).run();
   ```
-- [ ] 🔴 Vectorize에 벡터 저장
+- [x] 🔴 Vectorize에 벡터 저장
   ```typescript
   await env.VECTORIZE.insert([{
     id: memoId,
@@ -176,12 +176,12 @@
     metadata: { memo_id: memoId, user_id: 'temp-user' }
   }]);
   ```
-- [ ] 🔴 R2에서 원본 파일 삭제
+- [x] 🔴 R2에서 원본 파일 삭제
   ```typescript
   await env.AUDIO_BUCKET.delete(`${fileId}.webm`);
   ```
 - [ ] 🟡 트랜잭션 처리 (D1 저장 실패 시 Vectorize 롤백 고려)
-- [ ] 🟡 에러 핸들링 (각 단계별 실패 시 적절한 HTTP 상태 코드)
+- [x] 🟡 에러 핸들링 (각 단계별 실패 시 적절한 HTTP 상태 코드)
 - [ ] 🟡 E2E 테스트 (파일 업로드 → 프로세싱 → D1 조회)
 
 ### 1.6 Next.js 녹음 UI 구현
@@ -212,10 +212,10 @@
 
 **Deliverables**:
 - ✅ 녹음 → AI 자동 구조화 → D1/Vectorize 저장 완료
-- ✅ 기본 녹음 UI 동작
-- ✅ 한영 혼용 STT 정확도 > 90%
+- ⏳ 기본 녹음 UI 동작 (아직 미구현)
+- ⏳ 한영 혼용 STT 정확도 > 90% (테스트 필요)
 
-**Progress**: 0 / 42 tasks
+**Progress**: 27 / 42 tasks (64%)
 
 ---
 
