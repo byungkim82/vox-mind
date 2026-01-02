@@ -1,0 +1,22 @@
+name = "vox-mind-api"
+main = "workers/api.ts"
+compatibility_date = "2024-12-01"
+
+[env.production]
+workers_dev = false
+
+[[d1_databases]]
+binding = "DB"
+database_name = "vox-mind-db"
+database_id = "4d4a4eb0-45d3-4446-af7e-307416a93c9d"
+
+[[r2_buckets]]
+binding = "AUDIO_BUCKET"
+bucket_name = "vox-mind-audio-temp"
+
+[[vectorize]]
+binding = "VECTORIZE"
+index_name = "vox-mind-embeddings"
+
+[vars]
+ENVIRONMENT = "development"

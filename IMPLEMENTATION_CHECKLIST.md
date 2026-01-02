@@ -18,32 +18,35 @@
 ## Phase 0: 프로젝트 초기 설정
 
 ### 0.1 환경 설정
-- [ ] 🔴 Node.js 18+ 설치 확인
-- [ ] 🔴 Cloudflare 계정 생성 및 로그인
-- [ ] 🔴 Wrangler CLI 설치 (`npm install -g wrangler`)
-- [ ] 🔴 Wrangler 로그인 (`wrangler login`)
-- [ ] 🟡 Git 저장소 초기화 및 GitHub 연동
+- [x] 🔴 Node.js 18+ 설치 확인
+- [x] 🔴 Cloudflare 계정 생성 및 로그인
+- [x] 🔴 Wrangler CLI 설치 (`npm install -g wrangler`)
+- [x] 🔴 Wrangler 로그인 (`wrangler login`)
+- [x] 🟡 Git 저장소 초기화 및 GitHub 연동
 
 ### 0.2 외부 서비스 API 키 발급
-- [ ] 🔴 Groq API Key 발급 (https://console.groq.com)
-- [ ] 🔴 Google AI Studio에서 Gemini API Key 발급 (https://ai.google.dev)
-- [ ] 🔴 Voyage AI API Key 발급 (https://www.voyageai.com)
-- [ ] 🟡 API 키를 안전한 곳에 저장 (비밀번호 관리자 등)
+- [x] 🔴 Groq API Key 발급 (https://console.groq.com)
+- [x] 🔴 Google AI Studio에서 Gemini API Key 발급 (https://ai.google.dev)
+- [x] 🔴 Voyage AI API Key 발급 (https://www.voyageai.com)
+- [x] 🟡 API 키를 안전한 곳에 저장 (비밀번호 관리자 등)
 
 ### 0.3 Cloudflare 리소스 생성
-- [ ] 🔴 Cloudflare D1 데이터베이스 생성
+- [x] 🔴 Cloudflare D1 데이터베이스 생성
   ```bash
   wrangler d1 create vox-mind-db
   ```
-- [ ] 🔴 Cloudflare R2 버킷 생성
+- [x] 🔴 Cloudflare R2 버킷 생성
   ```bash
   wrangler r2 bucket create vox-mind-audio-temp
   ```
-- [ ] 🔴 Cloudflare Vectorize 인덱스 생성
+- [x] 🔴 Cloudflare Vectorize 인덱스 생성
   ```bash
   wrangler vectorize create vox-mind-embeddings --dimensions=512 --metric=cosine
   ```
-- [ ] 🟡 생성된 리소스 ID 기록
+- [x] 🟡 생성된 리소스 ID 기록
+  - [x] vox-mind-db: 4d4a4eb0-45d3-4446-af7e-307416a93c9d
+  - [x] vox-mind-audio-temp
+  - [x] vox-mind-embeddings 
 
 ### 0.4 프로젝트 구조 설정
 - [ ] 🔴 Next.js 프로젝트 생성
