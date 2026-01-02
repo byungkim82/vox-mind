@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import type { Env } from '../lib/types';
+import type { Env } from './lib/types';
 import { transcribeAudio } from './lib/groq-client';
 import { structureMemo } from './lib/gemini-client';
 import { generateEmbedding } from './lib/voyage-client';
@@ -46,11 +46,12 @@ app.post('/api/upload', async (c) => {
       return c.json({ error: 'No file provided' }, 400);
     }
 
-    // Validate type
-    const validTypes = ['audio/webm', 'audio/mp4', 'audio/wav', 'audio/mpeg'];
-    if (!validTypes.includes(file.type)) {
+    // Validate type (allow codecs suffix like audio/webm;codecs=opus)
+    const validPrefixes = ['audio/webm', 'audio/mp4', 'audio/wav', 'audio/mpeg', 'audio/m4a', 'audio/x-m4a', 'audio/aac'];
+    const isValidType = validPrefixes.some(prefix => file.type.startsWith(prefix));
+    if (!isValidType) {
       return c.json({
-        error: `Invalid file type: ${file.type}. Supported: webm, mp4, wav, mpeg`
+        error: `Invalid file type: ${file.type}. Supported: webm, mp4, wav, mpeg, m4a, aac`
       }, 400);
     }
 
@@ -64,7 +65,9 @@ app.post('/api/upload', async (c) => {
 
     // Upload to R2
     const fileId = crypto.randomUUID();
-    const extension = file.type.split('/')[1] || 'webm';
+    // Extract extension (handle codecs like audio/webm;codecs=opus -> webm)
+    const mimeBase = file.type.split(';')[0]; // Remove codecs suffix
+    const extension = mimeBase.split('/')[1] || 'webm';
     const fileName = `${fileId}.${extension}`;
 
     await c.env.AUDIO_BUCKET.put(fileName, file.stream());
@@ -89,16 +92,16 @@ app.post('/api/upload', async (c) => {
 // Process pipeline endpoint
 app.post('/api/process', async (c) => {
   try {
-    const { fileId } = await c.req.json();
+    const { fileId, fileName } = await c.req.json();
 
-    if (!fileId) {
-      return c.json({ error: 'fileId required' }, 400);
+    if (!fileId || !fileName) {
+      return c.json({ error: 'fileId and fileName required' }, 400);
     }
 
     console.log(`[${fileId}] Starting process pipeline...`);
 
     // 1. Get file from R2
-    const file = await c.env.AUDIO_BUCKET.get(`${fileId}.webm`);
+    const file = await c.env.AUDIO_BUCKET.get(fileName);
     if (!file) {
       return c.json({ error: 'File not found in R2' }, 404);
     }
@@ -108,7 +111,7 @@ app.post('/api/process', async (c) => {
 
     // 2. STT with Groq
     console.log(`[${fileId}] Starting STT...`);
-    const rawText = await transcribeAudio(audioBuffer, c.env);
+    const rawText = await transcribeAudio(audioBuffer, fileName, c.env);
     console.log(`[${fileId}] STT complete: ${rawText.length} chars`);
 
     // 3. Structure with Gemini
@@ -140,17 +143,20 @@ app.post('/api/process', async (c) => {
 
     console.log(`[${fileId}] Saved to D1: ${memoId}`);
 
-    // 6. Save to Vectorize
-    await c.env.VECTORIZE.insert([{
-      id: memoId,
-      values: embedding,
-      metadata: { memo_id: memoId, user_id: userId }
-    }]);
-
-    console.log(`[${fileId}] Saved to Vectorize`);
+    // 6. Save to Vectorize (skip in local dev - not supported)
+    if (c.env.VECTORIZE?.insert) {
+      await c.env.VECTORIZE.insert([{
+        id: memoId,
+        values: embedding,
+        metadata: { memo_id: memoId, user_id: userId }
+      }]);
+      console.log(`[${fileId}] Saved to Vectorize`);
+    } else {
+      console.log(`[${fileId}] Vectorize skipped (local dev)`);
+    }
 
     // 7. Delete from R2
-    await c.env.AUDIO_BUCKET.delete(`${fileId}.webm`);
+    await c.env.AUDIO_BUCKET.delete(fileName);
     console.log(`[${fileId}] Deleted from R2`);
 
     return c.json({

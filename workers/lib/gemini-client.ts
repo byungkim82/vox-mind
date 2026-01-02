@@ -1,4 +1,4 @@
-import type { Env, MemoStructure } from '../../lib/types';
+import type { Env, MemoStructure } from './types';
 
 const SYSTEM_PROMPT = `당신은 음성 메모를 분석하는 AI 어시스턴트입니다.
 사용자가 녹음한 내용에서 핵심 정보를 추출하세요.

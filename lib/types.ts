@@ -25,12 +25,38 @@ export interface MemoStructure {
   action_items: string[];
 }
 
-export interface Env {
-  DB: D1Database;
-  AUDIO_BUCKET: R2Bucket;
-  VECTORIZE: VectorizeIndex;
-  GROQ_API_KEY: string;
-  GEMINI_API_KEY: string;
-  VOYAGE_API_KEY: string;
-  ENVIRONMENT: string;
+// Recording states
+export type RecordingState = 'idle' | 'recording' | 'processing';
+
+// API responses
+export interface UploadResponse {
+  fileId: string;
+  fileName: string;
+  uploadedAt: string;
+  size: number;
+  type: string;
+}
+
+export interface ProcessResponse {
+  memoId: string;
+  title: string;
+  summary: string;
+  category: MemoCategory;
+  actionItems: string[];
+  rawTextLength: number;
+}
+
+export interface ApiError {
+  error: string;
+  details?: string;
+}
+
+// Toast types
+export type ToastType = 'success' | 'error' | 'info';
+
+export interface Toast {
+  id: string;
+  type: ToastType;
+  message: string;
+  duration?: number;
 }

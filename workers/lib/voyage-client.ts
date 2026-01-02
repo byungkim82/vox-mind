@@ -1,4 +1,4 @@
-import type { Env } from '../../lib/types';
+import type { Env } from './types';
 
 export async function generateEmbedding(
   text: string,
