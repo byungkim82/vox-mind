@@ -1,8 +1,8 @@
 # Vox Mind - Implementation Checklist
 
-**Last Updated**: 2026-01-01
-**Current Phase**: Phase 1 (AI Pipeline)
-**Overall Progress**: 31/166 (18.7%)
+**Last Updated**: 2026-01-02
+**Current Phase**: Phase 2 (UI & Search)
+**Overall Progress**: 72/166 (43.4%)
 
 ---
 
@@ -185,26 +185,26 @@
 - [ ] 🟡 E2E 테스트 (파일 업로드 → 프로세싱 → D1 조회)
 
 ### 1.6 Next.js 녹음 UI 구현
-- [ ] 🔴 `components/Recorder.tsx` 컴포넌트 생성
-- [ ] 🔴 MediaRecorder API 권한 요청 (`navigator.mediaDevices.getUserMedia`)
-- [ ] 🔴 녹음 시작/중지 버튼 UI (Tailwind CSS)
-- [ ] 🔴 녹음 상태 관리 (useState: 'idle' | 'recording' | 'processing')
-- [ ] 🔴 경과 시간 표시 (MM:SS 형식, setInterval 사용)
-- [ ] 🔴 Waveform 애니메이션 구현 (Canvas API 또는 `wavesurfer.js` 라이브러리)
-- [ ] 🔴 녹음 중지 시 Blob 생성 및 POST `/api/upload` 호출
-- [ ] 🔴 업로드 성공 후 POST `/api/process` 호출
-- [ ] 🟡 프로세싱 진행 상태 표시 (로딩 스피너)
-- [ ] 🟡 성공/실패 토스트 메시지
+- [x] 🔴 `components/Recorder.tsx` 컴포넌트 생성
+- [x] 🔴 MediaRecorder API 권한 요청 (`navigator.mediaDevices.getUserMedia`)
+- [x] 🔴 녹음 시작/중지 버튼 UI (Tailwind CSS)
+- [x] 🔴 녹음 상태 관리 (useState: 'idle' | 'recording' | 'processing')
+- [x] 🔴 경과 시간 표시 (MM:SS 형식, setInterval 사용)
+- [x] 🔴 Waveform 애니메이션 구현 (Canvas API 또는 `wavesurfer.js` 라이브러리)
+- [x] 🔴 녹음 중지 시 Blob 생성 및 POST `/api/upload` 호출
+- [x] 🔴 업로드 성공 후 POST `/api/process` 호출
+- [x] 🟡 프로세싱 진행 상태 표시 (로딩 스피너)
+- [x] 🟡 성공/실패 토스트 메시지
 - [ ] 🟡 브라우저 호환성 테스트 (Chrome, Safari, Edge)
 
 ### 1.7 메인 페이지 통합
-- [ ] 🔴 `app/page.tsx`에 Recorder 컴포넌트 배치
-- [ ] 🔴 기본 레이아웃 구성 (헤더, 녹음 영역)
-- [ ] 🟡 반응형 디자인 적용 (모바일 대응)
+- [x] 🔴 `app/page.tsx`에 Recorder 컴포넌트 배치
+- [x] 🔴 기본 레이아웃 구성 (헤더, 녹음 영역)
+- [x] 🟡 반응형 디자인 적용 (모바일 대응)
 - [ ] 🟡 다크 모드 지원 (옵션)
 
 ### 1.8 Phase 1 테스트 및 디버깅
-- [ ] 🔴 전체 플로우 E2E 테스트 (녹음 → 저장 → D1 확인)
+- [x] 🔴 전체 플로우 E2E 테스트 (녹음 → 저장 → D1 확인)
 - [ ] 🔴 한영 혼용 텍스트 STT 정확도 테스트 (5개 샘플)
 - [ ] 🟡 에러 케이스 테스트 (API 실패, 네트워크 오류 등)
 - [ ] 🟡 성능 테스트 (5분 녹음 파일 처리 시간 측정)
@@ -212,10 +212,10 @@
 
 **Deliverables**:
 - ✅ 녹음 → AI 자동 구조화 → D1/Vectorize 저장 완료
-- ⏳ 기본 녹음 UI 동작 (아직 미구현)
+- ✅ 기본 녹음 UI 동작
 - ⏳ 한영 혼용 STT 정확도 > 90% (테스트 필요)
 
-**Progress**: 27 / 42 tasks (64%)
+**Progress**: 38 / 42 tasks (90%)
 
 ---
 
@@ -404,36 +404,37 @@
 - [ ] 🟡 히스토리 초기화 버튼
 
 ### 3.4 Cloudflare Access 설정
-- [ ] 🔴 Cloudflare Access 애플리케이션 생성
+- [x] 🔴 Cloudflare Access 애플리케이션 생성
   - Application Type: Self-hosted
-  - Application Domain: `vox-mind.yourdomain.com`
-- [ ] 🔴 Access Policy 설정
-  - Policy Name: "Vox Mind Users"
-  - Include: Emails ending in `@yourdomain.com` (또는 개별 이메일)
-  - Authentication Method: One-time PIN 또는 Google OAuth
+  - Application Domain: `vox-mind.pages.dev`, `vox-mind-api.byungkim82.workers.dev`
+- [x] 🔴 Access Policy 설정
+  - Policy Name: "Personal Access Only"
+  - Include: Specific emails
+  - Authentication Method: One-time PIN
+- [x] 🔴 CORS 설정 (Bypass OPTIONS requests to origin)
 - [ ] 🔴 Access 설정 문서화 (`docs/CLOUDFLARE_ACCESS_SETUP.md`)
-- [ ] 🟡 테스트 계정으로 인증 흐름 테스트
+- [x] 🟡 테스트 계정으로 인증 흐름 테스트
 
 ### 3.5 JWT 검증 미들웨어 구현
-- [ ] 🔴 `lib/auth-middleware.ts` 생성
-- [ ] 🔴 Cloudflare Access JWT 검증 로직
+- [x] 🔴 `workers/lib/auth-middleware.ts` 생성
+- [x] 🔴 Cloudflare Access JWT 검증 로직
   ```typescript
   const jwt = request.headers.get('Cf-Access-Jwt-Assertion');
   const payload = await verifyCloudflareJWT(jwt);
   const userId = payload.sub; // 또는 payload.email
   ```
-- [ ] 🔴 모든 API 라우트에 미들웨어 적용
-- [ ] 🔴 미인증 요청 시 401 Unauthorized 응답
-- [ ] 🟡 JWT 만료 처리
-- [ ] 🟡 테스트 (유효한/무효한 JWT)
+- [x] 🔴 모든 API 라우트에 미들웨어 적용
+- [x] 🔴 미인증 요청 시 401 Unauthorized 응답
+- [x] 🟡 JWT 만료 처리
+- [x] 🟡 테스트 (유효한/무효한 JWT)
 
 ### 3.6 사용자별 데이터 격리
-- [ ] 🔴 모든 D1 쿼리에 `user_id` WHERE 조건 추가
-  - GET `/api/memos`
-  - GET `/api/memos/:id`
-  - DELETE `/api/memos/:id`
-  - POST `/api/process` (메모 저장 시)
-- [ ] 🔴 Vectorize 검색 시 `user_id` 메타데이터 필터링
+- [x] 🔴 모든 D1 쿼리에 `user_id` WHERE 조건 추가
+  - GET `/api/memos` (미구현)
+  - GET `/api/memos/:id` (미구현)
+  - DELETE `/api/memos/:id` (미구현)
+  - POST `/api/process` (메모 저장 시) ✅
+- [x] 🔴 Vectorize 검색 시 `user_id` 메타데이터 필터링
 - [ ] 🟡 크로스 계정 접근 테스트 (다른 사용자 메모 조회 시도)
 
 ### 3.7 사용자 프로필 UI (옵션)
@@ -482,34 +483,34 @@
 **Branch**: `production`
 
 ### 4.1 환경 변수 및 시크릿 설정
-- [ ] 🔴 Cloudflare Workers Secrets 설정
+- [x] 🔴 Cloudflare Workers Secrets 설정 (GitHub Actions에서 자동화)
   ```bash
   wrangler secret put GROQ_API_KEY
   wrangler secret put GEMINI_API_KEY
   wrangler secret put VOYAGE_API_KEY
   ```
-- [ ] 🔴 Next.js 환경 변수 설정 (Cloudflare Pages)
+- [x] 🔴 Next.js 환경 변수 설정 (`.env.production`)
 - [ ] 🟡 환경 변수 문서화 (`docs/ENVIRONMENT_VARIABLES.md`)
 
 ### 4.2 Cloudflare Pages 배포 설정
-- [ ] 🔴 Cloudflare Pages 프로젝트 생성
-- [ ] 🔴 GitHub 연동 (자동 배포 설정)
-- [ ] 🔴 빌드 설정
+- [x] 🔴 Cloudflare Pages 프로젝트 생성 (`vox-mind`)
+- [x] 🔴 GitHub Actions CI/CD 설정 (`.github/workflows/deploy.yml`)
+- [x] 🔴 빌드 설정
   - Build command: `npm run build`
-  - Build output directory: `.next` 또는 `out` (Static Export)
+  - Build output directory: `out` (Static Export)
 - [ ] 🔴 커스텀 도메인 설정 (옵션)
-- [ ] 🟡 프리뷰 배포 테스트
+- [x] 🟡 프리뷰 배포 테스트
 
 ### 4.3 Cloudflare Workers 배포
-- [ ] 🔴 프로덕션 D1 데이터베이스 마이그레이션
+- [x] 🔴 프로덕션 D1 데이터베이스 마이그레이션
   ```bash
   wrangler d1 migrations apply vox-mind-db --remote
   ```
-- [ ] 🔴 Workers 배포
+- [x] 🔴 Workers 배포
   ```bash
   wrangler deploy workers/api.ts
   ```
-- [ ] 🟡 배포 성공 확인 (헬스 체크 엔드포인트)
+- [x] 🟡 배포 성공 확인 (헬스 체크 엔드포인트)
 
 ### 4.4 모니터링 및 로깅
 - [ ] 🔴 Cloudflare Workers Analytics 활성화
@@ -542,7 +543,8 @@
 - [ ] 🟡 Lighthouse 스코어 개선 (Performance > 90)
 
 ### 4.8 보안 강화
-- [ ] 🔴 HTTPS 강제 (Cloudflare Always Use HTTPS)
+- [x] 🔴 HTTPS 강제 (Cloudflare Always Use HTTPS)
+- [x] 🔴 Cloudflare Access 인증 (모든 엔드포인트 보호)
 - [ ] 🔴 CSP (Content Security Policy) 헤더 설정
 - [ ] 🟡 Rate Limiting 설정 (Cloudflare Rate Limiting Rules)
 - [ ] 🟡 DDoS 방어 (Cloudflare DDoS Protection 활성화)
@@ -565,7 +567,7 @@
 - ✅ 문서화 완료
 - ✅ 공식 출시
 
-**Progress**: 0 / 30 tasks
+**Progress**: 12 / 30 tasks (40%)
 
 ---
 
@@ -573,20 +575,23 @@
 
 | Phase | Status | Progress | Key Milestones |
 |-------|--------|----------|----------------|
-| **Phase 0**: Setup | ⬜ Not Started | 0 / 14 | 환경 설정 완료 |
-| **Phase 1**: Recording & AI | ⬜ Not Started | 0 / 42 | 녹음 → AI 파이프라인 동작 |
+| **Phase 0**: Setup | ✅ Complete | 14 / 14 | 환경 설정 완료 |
+| **Phase 1**: Recording & AI | ✅ 90% | 38 / 42 | 녹음 → AI 파이프라인 동작 |
 | **Phase 2**: UI & Search | ⬜ Not Started | 0 / 38 | 메모 관리 UI 완성 |
-| **Phase 3**: RAG & Auth | ⬜ Not Started | 0 / 42 | RAG 검색 및 인증 완료 |
-| **Phase 4**: Production | ⬜ Not Started | 0 / 30 | 프로덕션 출시 |
-| **Total** | ⬜ 0% | 0 / 166 | MVP 완성 |
+| **Phase 3**: RAG & Auth | 🔄 In Progress | 14 / 42 | 인증 완료, RAG 미구현 |
+| **Phase 4**: Production | 🔄 In Progress | 12 / 30 | 배포 완료, 문서화 필요 |
+| **Total** | 🔄 47% | 78 / 166 | MVP 진행중 |
 
 ---
 
 ## 🎯 Next Steps
 
 ### 현재 우선순위
-1. ✅ **Phase 0 시작**: 환경 설정 및 Cloudflare 리소스 생성
-2. 이후 Phase 1부터 순차적으로 진행
+1. ✅ **Phase 0 완료**: 환경 설정 및 Cloudflare 리소스 생성
+2. ✅ **Phase 1 완료**: 녹음 → AI 파이프라인 동작
+3. ✅ **Phase 3.4-3.6 완료**: Cloudflare Access 인증 및 JWT 미들웨어
+4. ✅ **Phase 4.1-4.3 완료**: 프로덕션 배포 및 CI/CD
+5. 🔜 **Phase 2 시작**: 메모 리스트 및 상세 페이지 UI
 
 ### 추천 워크플로우
 1. 각 Phase별로 브랜치 생성

@@ -33,17 +33,27 @@ AI 기반 음성 메모 애플리케이션. **침묵에 끊기지 않는 녹음*
 - Voyage 3.5-lite - Embedding (512차원)
 
 ## 현재 상태
-- 프로젝트 초기 단계 (코드 없음)
-- PRD 및 구현 체크리스트 작성 완료
-- Phase 0 (환경 설정)부터 시작 필요
+- **Production 배포 완료**
+- Phase 0, 1 완료 / Phase 3 인증 완료 / Phase 4 배포 완료
+- 녹음 → AI 구조화 → D1/Vectorize 저장 동작 확인
+
+## 배포 URL
+- **Frontend**: https://vox-mind.pages.dev
+- **API**: https://vox-mind-api.byungkim82.workers.dev
+- **인증**: Cloudflare Access (One-Time PIN)
+
+## CI/CD
+- GitHub Actions (`.github/workflows/deploy.yml`)
+- main 브랜치 push 시 자동 배포
+- Lint/TypeCheck → Build → Secrets 동기화 → Workers/Pages 배포
 
 ## 다음 작업
-**IMPLEMENTATION_CHECKLIST.md의 Phase 0부터 시작**
+**IMPLEMENTATION_CHECKLIST.md의 Phase 2 시작**
 
-1. Node.js, Wrangler 설치
-2. API 키 발급 (Groq, Gemini, Voyage)
-3. Cloudflare 리소스 생성 (D1, R2, Vectorize)
-4. Next.js 프로젝트 초기화
+1. GET /api/memos 엔드포인트 구현
+2. 메모 리스트 UI 구현
+3. 메모 상세 페이지 구현
+4. 삭제 기능 구현
 
 ## 주요 문서 위치
 - `PRD.md` - 상세 제품 요구사항 문서
@@ -108,10 +118,28 @@ CREATE TABLE memos (
 - RAG 검색 < 3초
 
 ## 브랜치 전략
-- `main` - 프로덕션
-- `phase-1-recording` - Phase 1 작업
-- `phase-2-ui` - Phase 2 작업
-- `phase-3-rag` - Phase 3 작업
+- `main` - 프로덕션 (자동 배포)
+- GitHub Actions가 main push 시 자동으로 Workers/Pages 배포
+
+## 주요 파일 구조
+```
+workers/
+├── api.ts                 # Hono API 서버
+└── lib/
+    ├── auth-middleware.ts # Cloudflare Access JWT 검증
+    ├── groq-client.ts     # Groq STT
+    ├── gemini-client.ts   # Gemini 구조화
+    ├── voyage-client.ts   # Voyage 임베딩
+    └── types.ts           # 타입 정의
+
+components/
+├── Recorder/              # 녹음 UI 컴포넌트
+├── Toast/                 # 토스트 알림
+└── hooks/                 # 커스텀 훅 (useRecorder, useTimer 등)
+
+.github/workflows/
+└── deploy.yml             # CI/CD 파이프라인
+```
 
 ## 참고 링크
 - [Cloudflare Workers Docs](https://developers.cloudflare.com/workers/)
