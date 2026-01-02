@@ -39,3 +39,4 @@ next-env.d.ts
 # wrangler
 .wrangler/
 wrangler.toml.local
+.claude/settings.local.json

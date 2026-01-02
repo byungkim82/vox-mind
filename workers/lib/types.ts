@@ -8,6 +8,28 @@ export interface Env {
   GEMINI_API_KEY: string;
   VOYAGE_API_KEY: string;
   ENVIRONMENT: string;
+  ALLOWED_ORIGINS?: string;
+  // Cloudflare Access
+  CF_ACCESS_AUD?: string;
+  CF_ACCESS_TEAM_NAME?: string;
+}
+
+// Cloudflare Access JWT payload
+export interface CloudflareAccessJWTPayload {
+  aud: string[];
+  email: string;
+  exp: number;
+  iat: number;
+  iss: string;
+  sub: string;
+  type: string;
+  country?: string;
+}
+
+// Auth context for Hono
+export interface AuthContext {
+  userId: string;
+  email: string;
 }
 
 export type MemoCategory =

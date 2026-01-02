@@ -1,19 +1,33 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import type { Env } from './lib/types';
+import type { Env, AuthContext } from './lib/types';
 import { transcribeAudio } from './lib/groq-client';
 import { structureMemo } from './lib/gemini-client';
 import { generateEmbedding } from './lib/voyage-client';
+import { createAuthMiddleware, getAuth } from './lib/auth-middleware';
 
-const app = new Hono<{ Bindings: Env }>();
+type AppEnv = { Bindings: Env; Variables: { auth: AuthContext } };
 
-// CORS middleware
+const app = new Hono<AppEnv>();
+
+// CORS middleware - environment-based origins
 app.use('/*', cors({
-  origin: ['http://localhost:3000', 'http://localhost:3001'],
+  origin: (origin, c) => {
+    const allowedOrigins = c.env.ALLOWED_ORIGINS?.split(',') || [
+      'http://localhost:3000',
+      'http://localhost:3001',
+    ];
+    if (!origin) return null;
+    if (allowedOrigins.includes(origin)) return origin;
+    return null;
+  },
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowHeaders: ['Content-Type', 'Authorization'],
+  allowHeaders: ['Content-Type', 'Authorization', 'Cf-Access-Jwt-Assertion'],
   credentials: true,
 }));
+
+// Auth middleware for protected routes
+const authMiddleware = createAuthMiddleware();
 
 // Health check
 app.get('/', (c) => {
@@ -36,8 +50,8 @@ app.get('/health', (c) => {
   });
 });
 
-// Upload endpoint
-app.post('/api/upload', async (c) => {
+// Upload endpoint (protected)
+app.post('/api/upload', authMiddleware, async (c) => {
   try {
     const body = await c.req.parseBody();
     const file = body['file'];
@@ -89,8 +103,8 @@ app.post('/api/upload', async (c) => {
   }
 });
 
-// Process pipeline endpoint
-app.post('/api/process', async (c) => {
+// Process pipeline endpoint (protected)
+app.post('/api/process', authMiddleware, async (c) => {
   try {
     const { fileId, fileName } = await c.req.json();
 
@@ -126,7 +140,8 @@ app.post('/api/process', async (c) => {
 
     // 5. Save to D1
     const memoId = crypto.randomUUID();
-    const userId = 'temp-user'; // TODO: JWT in Phase 3
+    const auth = getAuth(c);
+    const userId = auth.userId;
 
     await c.env.DB.prepare(`
       INSERT INTO memos (id, user_id, raw_text, title, summary, category, action_items)
