@@ -7,7 +7,7 @@ AI 기반 음성 메모 애플리케이션. **침묵에 끊기지 않는 녹음*
 - VAD 없이 사용자가 멈출 때까지 무중단 녹음
 - 한영 혼용(Code-switching) STT 지원
 - AI 자동 구조화 (제목, 요약, 카테고리, 액션 아이템)
-- Cloudflare Zero-Egress로 월 $5 이하 운영
+- Cloudflare Workers AI로 월 $0 운영 (외부 API 비용 없음)
 
 ## 기술 스택
 
@@ -35,8 +35,9 @@ AI 기반 음성 메모 애플리케이션. **침묵에 끊기지 않는 녹음*
 
 ## 현재 상태
 - **Production 배포 완료**
-- Phase 0, 1 완료 / Phase 3 인증 완료 / Phase 4 배포 완료
-- 녹음 → AI 구조화 → D1/Vectorize 저장 동작 확인
+- Workers AI + Workflows 마이그레이션 완료 (2026-01-03)
+- 녹음 → Workflow 처리 → D1/Vectorize 저장 동작 확인
+- 평균 처리 시간: ~3.5초
 
 ## 배포 URL
 - **Frontend**: https://vox-mind.pages.dev
@@ -49,16 +50,14 @@ AI 기반 음성 메모 애플리케이션. **침묵에 끊기지 않는 녹음*
 - Lint/TypeCheck → Build → Secrets 동기화 → Workers/Pages 배포
 
 ## 다음 작업
-**IMPLEMENTATION_CHECKLIST.md의 Phase 2 시작**
-
 1. GET /api/memos 엔드포인트 구현
 2. 메모 리스트 UI 구현
 3. 메모 상세 페이지 구현
 4. 삭제 기능 구현
+5. RAG 검색 (POST /api/chat) 구현
 
 ## 주요 문서 위치
 - `PRD.md` - 상세 제품 요구사항 문서
-- `IMPLEMENTATION_CHECKLIST.md` - Phase별 구현 체크리스트 (166개 작업)
 
 ## 데이터베이스 스키마 (D1)
 ```sql
