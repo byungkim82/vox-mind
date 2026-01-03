@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import type { MemoSummary, MemoCategory } from '@/lib/types';
 
 interface MemoCardProps {
@@ -73,7 +72,7 @@ export function MemoCard({ memo, onDelete }: MemoCardProps) {
 
   return (
     <div className="relative">
-      <Link
+      <a
         href={`/memos/${memo.id}`}
         className="block bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow"
       >
@@ -106,7 +105,7 @@ export function MemoCard({ memo, onDelete }: MemoCardProps) {
         <div className="text-xs text-gray-400">
           {formatDate(memo.created_at)}
         </div>
-      </Link>
+      </a>
 
       {/* Delete confirmation overlay */}
       {showConfirm && (

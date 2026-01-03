@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import Link from 'next/link';
 import { sendChatMessage } from '@/lib/api/client';
 import type { ChatMessage, ChatSource } from '@/lib/types';
 
@@ -14,7 +13,7 @@ function formatDate(dateString: string): string {
 
 function SourceCard({ source }: { source: ChatSource }) {
   return (
-    <Link
+    <a
       href={`/memos/${source.id}`}
       className="block bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition-colors text-sm"
     >
@@ -22,7 +21,7 @@ function SourceCard({ source }: { source: ChatSource }) {
       <div className="text-gray-500 text-xs mt-1">
         {source.category} · {formatDate(source.created_at)}
       </div>
-    </Link>
+    </a>
   );
 }
 
