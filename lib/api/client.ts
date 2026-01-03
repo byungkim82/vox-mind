@@ -4,6 +4,11 @@ import type {
   ProcessStartResponse,
   ProcessStatusResponse,
   ApiError,
+  MemoListResponse,
+  MemoDetail,
+  MemoCategory,
+  ChatResponse,
+  DeleteResponse,
 } from '../types';
 
 // In production, use same origin (Pages Functions proxy)
@@ -118,3 +123,89 @@ async function processAudioAsync(
 
 // Export processAudio using async workflow
 export const processAudio = processAudioAsync;
+
+// ============================================================
+// Phase 2: Memo Management
+// ============================================================
+
+export interface GetMemosParams {
+  category?: MemoCategory | 'all';
+  limit?: number;
+  offset?: number;
+}
+
+export async function getMemos(params: GetMemosParams = {}): Promise<MemoListResponse> {
+  const searchParams = new URLSearchParams();
+  if (params.category && params.category !== 'all') {
+    searchParams.set('category', params.category);
+  }
+  if (params.limit) {
+    searchParams.set('limit', params.limit.toString());
+  }
+  if (params.offset) {
+    searchParams.set('offset', params.offset.toString());
+  }
+
+  const queryString = searchParams.toString();
+  const url = `${API_BASE}/api/memos${queryString ? `?${queryString}` : ''}`;
+
+  const response = await fetch(url, {
+    method: 'GET',
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const error: ApiError = await response.json();
+    throw new Error(error.error || '메모 목록 조회 실패');
+  }
+
+  return response.json();
+}
+
+export async function getMemo(id: string): Promise<MemoDetail> {
+  const response = await fetch(`${API_BASE}/api/memos/${id}`, {
+    method: 'GET',
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const error: ApiError = await response.json();
+    throw new Error(error.error || '메모 조회 실패');
+  }
+
+  return response.json();
+}
+
+export async function deleteMemo(id: string): Promise<DeleteResponse> {
+  const response = await fetch(`${API_BASE}/api/memos/${id}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const error: ApiError = await response.json();
+    throw new Error(error.error || '메모 삭제 실패');
+  }
+
+  return response.json();
+}
+
+// ============================================================
+// Phase 3: RAG Chat
+// ============================================================
+
+export async function sendChatMessage(question: string): Promise<ChatResponse> {
+  const response = await fetch(`${API_BASE}/api/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question }),
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const error: ApiError = await response.json();
+    throw new Error(error.error || 'AI 답변 생성 실패');
+  }
+
+  return response.json();
+}

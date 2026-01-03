@@ -1,8 +1,8 @@
 # Vox Mind - Implementation Checklist
 
-**Last Updated**: 2026-01-02
-**Current Phase**: Phase 2 (UI & Search)
-**Overall Progress**: 72/166 (43.4%)
+**Last Updated**: 2026-01-03
+**Current Phase**: Phase 4 (Production)
+**Overall Progress**: 130/166 (78.3%)
 
 ---
 
@@ -226,109 +226,79 @@
 **Branch**: `phase-2-ui`
 
 ### 2.1 GET /api/memos 엔드포인트 구현
-- [ ] 🔴 GET `/api/memos` 라우트 추가
-- [ ] 🔴 쿼리 파라미터 파싱 (`category`, `limit`, `offset`)
-- [ ] 🔴 D1 쿼리 구현 (페이지네이션, 필터링)
-  ```typescript
-  const { results } = await env.DB.prepare(`
-    SELECT id, title, summary, category, created_at
-    FROM memos
-    WHERE user_id = ? ${category ? 'AND category = ?' : ''}
-    ORDER BY created_at DESC
-    LIMIT ? OFFSET ?
-  `).bind(userId, ...(category ? [category] : []), limit, offset).all();
-  ```
-- [ ] 🔴 전체 개수 조회 (페이지네이션용)
-  ```typescript
-  const { count } = await env.DB.prepare(`
-    SELECT COUNT(*) as count FROM memos WHERE user_id = ?
-  `).bind(userId).first();
-  ```
-- [ ] 🔴 응답 형식 구현 (`{ memos: [...], total: N }`)
-- [ ] 🟡 에러 핸들링
+- [x] 🔴 GET `/api/memos` 라우트 추가
+- [x] 🔴 쿼리 파라미터 파싱 (`category`, `limit`, `offset`)
+- [x] 🔴 D1 쿼리 구현 (페이지네이션, 필터링)
+- [x] 🔴 전체 개수 조회 (페이지네이션용)
+- [x] 🔴 응답 형식 구현 (`{ memos: [...], total: N }`)
+- [x] 🟡 에러 핸들링
 - [ ] 🟡 Postman으로 API 테스트
 
 ### 2.2 메모 리스트 UI 구현
-- [ ] 🔴 `app/memos/page.tsx` 페이지 생성
-- [ ] 🔴 `components/MemoCard.tsx` 컴포넌트 생성
+- [x] 🔴 `app/memos/page.tsx` 페이지 생성
+- [x] 🔴 `components/MemoCard.tsx` 컴포넌트 생성
   - 카드 레이아웃 (제목, 카테고리 태그, 요약, 날짜)
   - 카테고리별 색상 코드 (Tailwind CSS)
-- [ ] 🔴 GET `/api/memos` 호출 및 데이터 페칭 (React useEffect)
-- [ ] 🔴 메모 리스트 렌더링 (map으로 MemoCard 반복)
-- [ ] 🟡 로딩 상태 표시 (Skeleton UI)
-- [ ] 🟡 빈 상태 처리 ("아직 메모가 없습니다")
-- [ ] 🟡 무한 스크롤 또는 페이지네이션 구현
+- [x] 🔴 GET `/api/memos` 호출 및 데이터 페칭 (React useEffect)
+- [x] 🔴 메모 리스트 렌더링 (map으로 MemoCard 반복)
+- [x] 🟡 로딩 상태 표시 (Skeleton UI)
+- [x] 🟡 빈 상태 처리 ("아직 메모가 없습니다")
+- [x] 🟡 무한 스크롤 또는 페이지네이션 구현
 
 ### 2.3 카테고리 필터링 구현
-- [ ] 🔴 카테고리 드롭다운 또는 태그 버튼 UI
-- [ ] 🔴 카테고리 선택 시 URL 쿼리 파라미터 업데이트 (`?category=개발`)
-- [ ] 🔴 쿼리 파라미터에 따라 API 호출
-- [ ] 🟡 "전체" 옵션 추가
-- [ ] 🟡 선택된 카테고리 하이라이트 표시
+- [x] 🔴 카테고리 드롭다운 또는 태그 버튼 UI
+- [x] 🔴 카테고리 선택 시 URL 쿼리 파라미터 업데이트 (`?category=개발`)
+- [x] 🔴 쿼리 파라미터에 따라 API 호출
+- [x] 🟡 "전체" 옵션 추가
+- [x] 🟡 선택된 카테고리 하이라이트 표시
 
 ### 2.4 GET /api/memos/:id 엔드포인트 구현
-- [ ] 🔴 GET `/api/memos/:id` 라우트 추가
-- [ ] 🔴 D1에서 메모 상세 조회
-  ```typescript
-  const memo = await env.DB.prepare(`
-    SELECT * FROM memos WHERE id = ? AND user_id = ?
-  `).bind(memoId, userId).first();
-  ```
-- [ ] 🔴 404 처리 (메모 없음 또는 권한 없음)
-- [ ] 🔴 `action_items` JSON 파싱
+- [x] 🔴 GET `/api/memos/:id` 라우트 추가
+- [x] 🔴 D1에서 메모 상세 조회
+- [x] 🔴 404 처리 (메모 없음 또는 권한 없음)
+- [x] 🔴 `action_items` JSON 파싱
 - [ ] 🟡 API 테스트
 
 ### 2.5 메모 상세 페이지 구현
-- [ ] 🔴 `app/memos/[id]/page.tsx` 동적 라우트 생성
-- [ ] 🔴 메모 상세 정보 표시
+- [x] 🔴 `app/memos/[id]/page.tsx` 동적 라우트 생성
+- [x] 🔴 메모 상세 정보 표시
   - 제목 (볼드, 큰 폰트)
   - 카테고리 태그
   - 생성일
   - 전체 전사 텍스트 (줄바꿈 처리)
   - 액션 아이템 (체크리스트 형태)
-- [ ] 🟡 뒤로 가기 버튼
+- [x] 🟡 뒤로 가기 버튼
 - [ ] 🟡 공유 버튼 (Future Enhancement - 비활성화)
-- [ ] 🟡 반응형 디자인
+- [x] 🟡 반응형 디자인
 
 ### 2.6 DELETE /api/memos/:id 엔드포인트 구현
-- [ ] 🔴 DELETE `/api/memos/:id` 라우트 추가
-- [ ] 🔴 D1에서 메모 삭제
-  ```typescript
-  await env.DB.prepare(`
-    DELETE FROM memos WHERE id = ? AND user_id = ?
-  `).bind(memoId, userId).run();
-  ```
-- [ ] 🔴 Vectorize에서 벡터 삭제
-  ```typescript
-  await env.VECTORIZE.deleteByIds([memoId]);
-  ```
-- [ ] 🟡 삭제 성공 여부 확인 (affected rows)
-- [ ] 🟡 에러 핸들링
+- [x] 🔴 DELETE `/api/memos/:id` 라우트 추가
+- [x] 🔴 D1에서 메모 삭제
+- [x] 🔴 Vectorize에서 벡터 삭제
+- [x] 🟡 삭제 성공 여부 확인 (affected rows)
+- [x] 🟡 에러 핸들링
 - [ ] 🟡 API 테스트
 
 ### 2.7 메모 삭제 기능 UI
-- [ ] 🔴 메모 상세 페이지에 삭제 버튼 추가
-- [ ] 🔴 삭제 확인 다이얼로그 (Modal 또는 브라우저 confirm)
-- [ ] 🔴 DELETE `/api/memos/:id` 호출
-- [ ] 🔴 삭제 성공 시 메모 리스트 페이지로 리다이렉트
+- [x] 🔴 메모 상세 페이지에 삭제 버튼 추가
+- [x] 🔴 삭제 확인 다이얼로그 (Modal 또는 브라우저 confirm)
+- [x] 🔴 DELETE `/api/memos/:id` 호출
+- [x] 🔴 삭제 성공 시 메모 리스트 페이지로 리다이렉트
 - [ ] 🟡 토스트 메시지 ("메모가 삭제되었습니다")
-- [ ] 🟡 삭제 실패 시 에러 메시지
+- [x] 🟡 삭제 실패 시 에러 메시지
 
 ### 2.8 텍스트 검색 기능 (옵션)
 - [ ] 🟢 검색창 UI (`app/memos/page.tsx`)
 - [ ] 🟢 D1 LIKE 쿼리로 제목/요약 검색
-  ```typescript
-  WHERE (title LIKE '%' || ? || '%' OR summary LIKE '%' || ? || '%')
-  ```
 - [ ] 🟢 검색 결과 하이라이트 표시
 
 ### 2.9 네비게이션 및 레이아웃 개선
-- [ ] 🔴 `components/Navbar.tsx` 컴포넌트 생성
+- [x] 🔴 `components/Navbar.tsx` 컴포넌트 생성
   - 홈 (녹음 페이지)
   - 메모 목록
   - (Phase 3에서 추가될) 검색
-- [ ] 🔴 `app/layout.tsx`에 Navbar 추가
-- [ ] 🟡 모바일 햄버거 메뉴 (반응형)
+- [x] 🔴 `app/layout.tsx`에 Navbar 추가
+- [x] 🟡 모바일 햄버거 메뉴 (반응형) - 모바일 하단 네비게이션으로 구현
 
 ### 2.10 Phase 2 테스트 및 디버깅
 - [ ] 🔴 메모 리스트 조회 테스트
@@ -343,7 +313,7 @@
 - ✅ 카테고리 필터링 및 삭제 기능 완료
 - ✅ 반응형 UI/UX
 
-**Progress**: 0 / 38 tasks
+**Progress**: 32 / 38 tasks (84%)
 
 ---
 
@@ -354,54 +324,36 @@
 **Branch**: `phase-3-rag`
 
 ### 3.1 POST /api/chat 엔드포인트 구현
-- [ ] 🔴 POST `/api/chat` 라우트 추가
-- [ ] 🔴 요청 바디 파싱 (`{ question: string }`)
-- [ ] 🔴 질문 임베딩 생성 (Voyage API 호출)
-  ```typescript
-  const questionEmbedding = await generateEmbedding(question);
-  ```
-- [ ] 🔴 Vectorize 유사도 검색 (top-K=5)
-  ```typescript
-  const results = await env.VECTORIZE.query(questionEmbedding, {
-    topK: 5,
-    filter: { user_id: userId }
-  });
-  ```
-- [ ] 🔴 검색된 메모 ID로 D1에서 상세 정보 조회
-  ```typescript
-  const memoIds = results.matches.map(m => m.id);
-  const memos = await env.DB.prepare(`
-    SELECT id, title, summary, raw_text FROM memos WHERE id IN (${memoIds.join(',')})
-  `).all();
-  ```
-- [ ] 🔴 컨텍스트 구성 (메모 제목, 요약, 날짜)
-- [ ] 🔴 Gemini API로 답변 생성 (RAG 프롬프트 사용)
-  ```typescript
-  const answer = await generateAnswer(question, context);
-  ```
-- [ ] 🔴 응답 형식 구현 (`{ answer: string, sources: Memo[] }`)
-- [ ] 🟡 메모 없을 때 처리 ("관련 메모를 찾을 수 없습니다")
-- [ ] 🟡 에러 핸들링
+- [x] 🔴 POST `/api/chat` 라우트 추가
+- [x] 🔴 요청 바디 파싱 (`{ question: string }`)
+- [x] 🔴 질문 임베딩 생성 (Workers AI @cf/baai/bge-m3)
+- [x] 🔴 Vectorize 유사도 검색 (top-K=5)
+- [x] 🔴 검색된 메모 ID로 D1에서 상세 정보 조회
+- [x] 🔴 컨텍스트 구성 (메모 제목, 요약, 날짜)
+- [x] 🔴 Workers AI LLM으로 답변 생성 (@cf/meta/llama-4-scout-17b-16e-instruct)
+- [x] 🔴 응답 형식 구현 (`{ answer: string, sources: Memo[] }`)
+- [x] 🟡 메모 없을 때 처리 ("관련 메모를 찾을 수 없습니다")
+- [x] 🟡 에러 핸들링
 - [ ] 🟡 API 테스트 (다양한 질문으로)
 
 ### 3.2 채팅 UI 구현
-- [ ] 🔴 `components/ChatInterface.tsx` 컴포넌트 생성
-- [ ] 🔴 질문 입력창 + 전송 버튼 (하단 고정)
-- [ ] 🔴 질문/답변 히스토리 표시 (useState로 관리)
+- [x] 🔴 `components/ChatInterface.tsx` 컴포넌트 생성
+- [x] 🔴 질문 입력창 + 전송 버튼 (하단 고정)
+- [x] 🔴 질문/답변 히스토리 표시 (useState로 관리)
   - 사용자 질문: 오른쪽 정렬, 파란색 말풍선
   - AI 답변: 왼쪽 정렬, 회색 말풍선
-- [ ] 🔴 POST `/api/chat` 호출 및 응답 렌더링
-- [ ] 🔴 관련 메모 링크 표시 (sources 배열)
+- [x] 🔴 POST `/api/chat` 호출 및 응답 렌더링
+- [x] 🔴 관련 메모 링크 표시 (sources 배열)
   - 메모 제목 클릭 시 상세 페이지 이동
-- [ ] 🟡 로딩 애니메이션 (타이핑 효과 또는 점 3개)
-- [ ] 🟡 스크롤 자동 하단 이동 (새 메시지 추가 시)
-- [ ] 🟡 Enter 키로 전송 (Shift+Enter는 줄바꿈)
+- [x] 🟡 로딩 애니메이션 (타이핑 효과 또는 점 3개)
+- [x] 🟡 스크롤 자동 하단 이동 (새 메시지 추가 시)
+- [x] 🟡 Enter 키로 전송 (Shift+Enter는 줄바꿈)
 
 ### 3.3 검색 페이지 통합
-- [ ] 🔴 `app/search/page.tsx` 페이지 생성
-- [ ] 🔴 ChatInterface 컴포넌트 배치
+- [x] 🔴 `app/search/page.tsx` 페이지 생성
+- [x] 🔴 ChatInterface 컴포넌트 배치
 - [ ] 🟡 채팅 히스토리 localStorage 저장 (세션 유지)
-- [ ] 🟡 히스토리 초기화 버튼
+- [x] 🟡 히스토리 초기화 버튼
 
 ### 3.4 Cloudflare Access 설정
 - [x] 🔴 Cloudflare Access 애플리케이션 생성
@@ -430,10 +382,11 @@
 
 ### 3.6 사용자별 데이터 격리
 - [x] 🔴 모든 D1 쿼리에 `user_id` WHERE 조건 추가
-  - GET `/api/memos` (미구현)
-  - GET `/api/memos/:id` (미구현)
-  - DELETE `/api/memos/:id` (미구현)
+  - GET `/api/memos` ✅
+  - GET `/api/memos/:id` ✅
+  - DELETE `/api/memos/:id` ✅
   - POST `/api/process` (메모 저장 시) ✅
+  - POST `/api/chat` ✅
 - [x] 🔴 Vectorize 검색 시 `user_id` 메타데이터 필터링
 - [ ] 🟡 크로스 계정 접근 테스트 (다른 사용자 메모 조회 시도)
 
@@ -470,9 +423,9 @@
 - ✅ 대화형 검색 (RAG) 완전 동작
 - ✅ Cloudflare Access 인증 완료
 - ✅ 사용자별 데이터 완전 격리
-- ✅ Precision@3 > 80%
+- ⏳ Precision@3 > 80% (테스트 필요)
 
-**Progress**: 0 / 42 tasks
+**Progress**: 34 / 42 tasks (81%)
 
 ---
 
@@ -577,10 +530,10 @@
 |-------|--------|----------|----------------|
 | **Phase 0**: Setup | ✅ Complete | 14 / 14 | 환경 설정 완료 |
 | **Phase 1**: Recording & AI | ✅ 90% | 38 / 42 | 녹음 → AI 파이프라인 동작 |
-| **Phase 2**: UI & Search | ⬜ Not Started | 0 / 38 | 메모 관리 UI 완성 |
-| **Phase 3**: RAG & Auth | 🔄 In Progress | 14 / 42 | 인증 완료, RAG 미구현 |
+| **Phase 2**: UI & Search | ✅ 84% | 32 / 38 | 메모 관리 UI 완성 |
+| **Phase 3**: RAG & Auth | ✅ 81% | 34 / 42 | 인증 완료, RAG 구현 완료 |
 | **Phase 4**: Production | 🔄 In Progress | 12 / 30 | 배포 완료, 문서화 필요 |
-| **Total** | 🔄 47% | 78 / 166 | MVP 진행중 |
+| **Total** | 🔄 79% | 130 / 166 | MVP 거의 완료 |
 
 ---
 
@@ -589,9 +542,9 @@
 ### 현재 우선순위
 1. ✅ **Phase 0 완료**: 환경 설정 및 Cloudflare 리소스 생성
 2. ✅ **Phase 1 완료**: 녹음 → AI 파이프라인 동작
-3. ✅ **Phase 3.4-3.6 완료**: Cloudflare Access 인증 및 JWT 미들웨어
-4. ✅ **Phase 4.1-4.3 완료**: 프로덕션 배포 및 CI/CD
-5. 🔜 **Phase 2 시작**: 메모 리스트 및 상세 페이지 UI
+3. ✅ **Phase 2 완료**: 메모 리스트 및 상세 페이지 UI
+4. ✅ **Phase 3 완료**: RAG 검색 및 인증
+5. 🔜 **Phase 4 진행중**: 테스트, 문서화, 모니터링
 
 ### 추천 워크플로우
 1. 각 Phase별로 브랜치 생성

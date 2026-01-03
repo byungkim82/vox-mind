@@ -164,4 +164,232 @@ app.get('/api/process/:instanceId', authMiddleware, async (c) => {
   }
 });
 
+// ============================================================
+// Phase 2: Memo Management API
+// ============================================================
+
+// GET /api/memos - List memos with pagination and filtering
+app.get('/api/memos', authMiddleware, async (c) => {
+  try {
+    const auth = getAuth(c);
+    const category = c.req.query('category');
+    const limit = Math.min(parseInt(c.req.query('limit') || '20'), 100);
+    const offset = parseInt(c.req.query('offset') || '0');
+
+    // Build query with optional category filter
+    let query = `
+      SELECT id, title, summary, category, created_at, updated_at
+      FROM memos
+      WHERE user_id = ?
+    `;
+    const params: (string | number)[] = [auth.userId];
+
+    if (category && category !== 'all') {
+      query += ` AND category = ?`;
+      params.push(category);
+    }
+
+    query += ` ORDER BY created_at DESC LIMIT ? OFFSET ?`;
+    params.push(limit, offset);
+
+    const { results } = await c.env.DB.prepare(query).bind(...params).all();
+
+    // Get total count
+    let countQuery = `SELECT COUNT(*) as count FROM memos WHERE user_id = ?`;
+    const countParams: string[] = [auth.userId];
+    if (category && category !== 'all') {
+      countQuery += ` AND category = ?`;
+      countParams.push(category);
+    }
+    const countResult = await c.env.DB.prepare(countQuery).bind(...countParams).first<{ count: number }>();
+
+    return c.json({
+      memos: results,
+      total: countResult?.count || 0,
+      limit,
+      offset,
+    });
+
+  } catch (error) {
+    console.error('Get memos error:', error);
+    return c.json({
+      error: '메모 목록 조회 실패',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, 500);
+  }
+});
+
+// GET /api/memos/:id - Get single memo detail
+app.get('/api/memos/:id', authMiddleware, async (c) => {
+  try {
+    const auth = getAuth(c);
+    const memoId = c.req.param('id');
+
+    const memo = await c.env.DB.prepare(`
+      SELECT * FROM memos WHERE id = ? AND user_id = ?
+    `).bind(memoId, auth.userId).first();
+
+    if (!memo) {
+      return c.json({ error: '메모를 찾을 수 없습니다' }, 404);
+    }
+
+    // Parse action_items JSON
+    const result = {
+      ...memo,
+      action_items: memo.action_items ? JSON.parse(memo.action_items as string) : [],
+    };
+
+    return c.json(result);
+
+  } catch (error) {
+    console.error('Get memo error:', error);
+    return c.json({
+      error: '메모 조회 실패',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, 500);
+  }
+});
+
+// DELETE /api/memos/:id - Delete memo
+app.delete('/api/memos/:id', authMiddleware, async (c) => {
+  try {
+    const auth = getAuth(c);
+    const memoId = c.req.param('id');
+
+    // Check if memo exists and belongs to user
+    const memo = await c.env.DB.prepare(`
+      SELECT id FROM memos WHERE id = ? AND user_id = ?
+    `).bind(memoId, auth.userId).first();
+
+    if (!memo) {
+      return c.json({ error: '메모를 찾을 수 없습니다' }, 404);
+    }
+
+    // Delete from D1
+    await c.env.DB.prepare(`
+      DELETE FROM memos WHERE id = ? AND user_id = ?
+    `).bind(memoId, auth.userId).run();
+
+    // Delete from Vectorize
+    try {
+      await c.env.VECTORIZE.deleteByIds([memoId]);
+    } catch (vectorError) {
+      console.error('Vectorize delete error (non-fatal):', vectorError);
+    }
+
+    return c.json({ success: true, message: '메모가 삭제되었습니다' });
+
+  } catch (error) {
+    console.error('Delete memo error:', error);
+    return c.json({
+      error: '메모 삭제 실패',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, 500);
+  }
+});
+
+// ============================================================
+// Phase 3: RAG Chat API
+// ============================================================
+
+// POST /api/chat - RAG-based chat
+app.post('/api/chat', authMiddleware, async (c) => {
+  try {
+    const auth = getAuth(c);
+    const { question } = await c.req.json<{ question: string }>();
+
+    if (!question || question.trim().length === 0) {
+      return c.json({ error: '질문을 입력해주세요' }, 400);
+    }
+
+    // Step 1: Generate embedding for the question
+    const embeddingResponse = await c.env.AI.run('@cf/baai/bge-m3', {
+      text: [question],
+    }) as { data: number[][] };
+
+    const questionEmbedding = embeddingResponse.data[0];
+
+    // Step 2: Search Vectorize for similar memos
+    const searchResults = await c.env.VECTORIZE.query(questionEmbedding, {
+      topK: 5,
+      filter: { user_id: auth.userId },
+      returnMetadata: 'all',
+    });
+
+    if (!searchResults.matches || searchResults.matches.length === 0) {
+      return c.json({
+        answer: '관련된 메모를 찾을 수 없습니다. 먼저 음성 메모를 녹음해주세요.',
+        sources: [],
+      });
+    }
+
+    // Step 3: Fetch memo details from D1
+    const memoIds = searchResults.matches.map(m => m.id);
+    const placeholders = memoIds.map(() => '?').join(',');
+    const { results: memos } = await c.env.DB.prepare(`
+      SELECT id, title, summary, raw_text, category, created_at
+      FROM memos
+      WHERE id IN (${placeholders}) AND user_id = ?
+    `).bind(...memoIds, auth.userId).all();
+
+    if (!memos || memos.length === 0) {
+      return c.json({
+        answer: '관련된 메모를 찾을 수 없습니다.',
+        sources: [],
+      });
+    }
+
+    // Step 4: Build context for LLM
+    const context = memos.map((memo, i) => {
+      const date = new Date(memo.created_at as string).toLocaleDateString('ko-KR');
+      return `[메모 ${i + 1}] (${date}, ${memo.category || '기타'})
+제목: ${memo.title || '제목 없음'}
+요약: ${memo.summary || '요약 없음'}
+내용: ${memo.raw_text}`;
+    }).join('\n\n---\n\n');
+
+    // Step 5: Generate answer using LLM
+    const prompt = `당신은 사용자의 음성 메모를 기반으로 질문에 답변하는 AI 어시스턴트입니다.
+
+아래는 사용자의 질문과 관련된 메모들입니다:
+
+${context}
+
+---
+
+사용자 질문: ${question}
+
+위 메모 내용만을 참고하여 질문에 답변해주세요.
+- 메모에 없는 정보는 추측하지 마세요.
+- 답변은 자연스럽고 친근하게 작성해주세요.
+- 관련 메모가 있다면 어떤 메모에서 정보를 찾았는지 간단히 언급해주세요.
+- 한국어로 답변해주세요.`;
+
+    const llmResponse = await c.env.AI.run('@cf/meta/llama-4-scout-17b-16e-instruct', {
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 1024,
+    }) as { response?: string };
+
+    const answer = llmResponse.response || '답변을 생성하지 못했습니다.';
+
+    // Format sources for response
+    const sources = memos.map(memo => ({
+      id: memo.id,
+      title: memo.title || '제목 없음',
+      summary: memo.summary || '',
+      category: memo.category || '기타',
+      created_at: memo.created_at,
+    }));
+
+    return c.json({ answer, sources });
+
+  } catch (error) {
+    console.error('Chat error:', error);
+    return c.json({
+      error: 'AI 답변 생성 실패',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, 500);
+  }
+});
+
 export default app;

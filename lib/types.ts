@@ -80,3 +80,53 @@ export interface Toast {
   message: string;
   duration?: number;
 }
+
+// Memo list response
+export interface MemoListResponse {
+  memos: MemoSummary[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface MemoSummary {
+  id: string;
+  title: string | null;
+  summary: string | null;
+  category: MemoCategory | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Memo detail (with parsed action_items)
+export interface MemoDetail extends Omit<Memo, 'action_items'> {
+  action_items: string[];
+}
+
+// Chat types
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  sources?: ChatSource[];
+  timestamp: Date;
+}
+
+export interface ChatSource {
+  id: string;
+  title: string;
+  summary: string;
+  category: string;
+  created_at: string;
+}
+
+export interface ChatResponse {
+  answer: string;
+  sources: ChatSource[];
+}
+
+// Delete response
+export interface DeleteResponse {
+  success: boolean;
+  message: string;
+}
