@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { getMemos } from '@/lib/api/client';
+import { getMemos, deleteMemo } from '@/lib/api/client';
 import { MemoCard } from '@/components/MemoCard';
 import type { MemoSummary, MemoCategory } from '@/lib/types';
 
@@ -91,6 +91,12 @@ export function MemoList() {
     fetchMemos(selectedCategory, newOffset);
   };
 
+  const handleDelete = useCallback(async (id: string) => {
+    await deleteMemo(id);
+    setMemos((prev) => prev.filter((memo) => memo.id !== id));
+    setTotal((prev) => prev - 1);
+  }, []);
+
   const hasMore = memos.length < total;
 
   return (
@@ -139,7 +145,7 @@ export function MemoList() {
       {/* Memo list */}
       <div className="space-y-3">
         {memos.map((memo) => (
-          <MemoCard key={memo.id} memo={memo} />
+          <MemoCard key={memo.id} memo={memo} onDelete={handleDelete} />
         ))}
 
         {/* Loading skeletons */}

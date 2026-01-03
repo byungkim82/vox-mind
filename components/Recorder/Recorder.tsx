@@ -2,16 +2,15 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRecorder, useAudioAnalyzer, useTimer, useToast } from '../hooks';
-import { uploadAudio, processAudio } from '@/lib/api/client';
+import { uploadAudio, startProcessing } from '@/lib/api/client';
 import { RecordButton } from './RecordButton';
 import { Waveform } from './Waveform';
 import { Timer } from './Timer';
 import { ToastContainer } from '../Toast';
-import type { ProcessResponse, RecordingState } from '@/lib/types';
+import type { RecordingState } from '@/lib/types';
 
 export function Recorder() {
   const [processingState, setProcessingState] = useState<RecordingState>('idle');
-  const [result, setResult] = useState<ProcessResponse | null>(null);
 
   const {
     state: recorderState,
@@ -34,12 +33,11 @@ export function Recorder() {
     if (isRecording) {
       stopRecording();
     } else {
-      setResult(null);
       await startRecording();
     }
   }, [isRecording, startRecording, stopRecording]);
 
-  // Process audio when blob is available
+  // Fire-and-forget: Upload and trigger workflow, then immediately done
   useEffect(() => {
     if (!audioBlob) return;
 
@@ -50,11 +48,10 @@ export function Recorder() {
         addToast('info', '음성 업로드 중...');
         const uploadResult = await uploadAudio(audioBlob);
 
-        addToast('info', 'AI 처리 중...');
-        const processResult = await processAudio(uploadResult.fileId, uploadResult.fileName);
+        // Trigger workflow (fire-and-forget, no polling)
+        await startProcessing(uploadResult.fileId, uploadResult.fileName);
 
-        setResult(processResult);
-        addToast('success', `메모 생성 완료: "${processResult.title}"`);
+        addToast('success', '메모 저장됨! 메모 목록에서 확인하세요.');
       } catch (error) {
         const message = error instanceof Error ? error.message : '처리 중 오류 발생';
         addToast('error', message);
@@ -96,25 +93,7 @@ export function Recorder() {
 
       {/* Processing indicator */}
       {isProcessing && (
-        <p className="text-gray-600 text-sm animate-pulse">처리 중...</p>
-      )}
-
-      {/* Result display */}
-      {result && (
-        <div className="w-full mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-          <h3 className="font-semibold text-green-900">{result.title}</h3>
-          <p className="text-green-800 text-sm mt-1">{result.summary}</p>
-          <div className="flex items-center gap-2 mt-3">
-            <span className="px-2 py-1 bg-green-200 text-green-800 rounded text-xs">
-              {result.category}
-            </span>
-            {result.actionItems.length > 0 && (
-              <span className="text-green-700 text-xs">
-                {result.actionItems.length}개 액션 아이템
-              </span>
-            )}
-          </div>
-        </div>
+        <p className="text-gray-600 text-sm animate-pulse">저장 중...</p>
       )}
 
       {/* Toast notifications */}
