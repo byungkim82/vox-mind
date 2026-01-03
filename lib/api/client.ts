@@ -6,7 +6,9 @@ import type {
   ApiError,
 } from '../types';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// In production, use same origin (Pages Functions proxy)
+// In development, use local Workers
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 
 // Polling configuration
 const POLL_INTERVAL = 2000; // 2 seconds
