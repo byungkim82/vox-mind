@@ -9,39 +9,27 @@ export class ProcessMemoWorkflow extends WorkflowEntrypoint<Env, WorkflowParams>
     const { fileId, fileName, userId } = event.payload;
     console.log(`[${fileId}] Workflow 시작`);
 
-    // Step 1: Fetch audio from R2
-    const audioBuffer = await step.do(
-      'fetch-audio',
-      {
-        retries: { limit: 3, delay: '2 seconds', backoff: 'exponential' },
-        timeout: '2 minutes',
-      },
-      async () => {
-        console.log(`[${fileId}] R2에서 파일 가져오는 중...`);
-        const file = await this.env.AUDIO_BUCKET.get(fileName);
-        if (!file) {
-          throw new Error(`파일 없음: ${fileName}`);
-        }
-        const buffer = await file.arrayBuffer();
-        console.log(`[${fileId}] R2 파일 크기: ${buffer.byteLength} bytes`);
-        // Return as base64 string to avoid serialization issues
-        const uint8Array = new Uint8Array(buffer);
-        return Array.from(uint8Array);
-      }
-    );
-
-    // Step 2: Workers AI STT
+    // Step 1: Fetch audio from R2 and transcribe with Workers AI STT
+    // Combined into one step to avoid ArrayBuffer serialization issues
     const rawText = await step.do(
-      'transcribe',
+      'fetch-and-transcribe',
       {
         retries: { limit: 3, delay: '5 seconds', backoff: 'exponential' },
         timeout: '10 minutes',
       },
       async () => {
+        // Fetch from R2
+        console.log(`[${fileId}] R2에서 파일 가져오는 중...`);
+        const file = await this.env.AUDIO_BUCKET.get(fileName);
+        if (!file) {
+          throw new Error(`파일 없음: ${fileName}`);
+        }
+        const audioBuffer = await file.arrayBuffer();
+        console.log(`[${fileId}] R2 파일 크기: ${audioBuffer.byteLength} bytes`);
+
+        // Transcribe with Workers AI
         console.log(`[${fileId}] STT 시작...`);
-        // Convert array back to ArrayBuffer
-        const buffer = new Uint8Array(audioBuffer).buffer;
-        const text = await transcribeWithWorkersAI(buffer, this.env);
+        const text = await transcribeWithWorkersAI(audioBuffer, this.env);
         console.log(`[${fileId}] STT 완료: ${text.length} 글자`);
         return text;
       }

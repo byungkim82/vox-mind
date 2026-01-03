@@ -4,11 +4,11 @@ export async function transcribeWithWorkersAI(
   audioBuffer: ArrayBuffer,
   env: Env
 ): Promise<string> {
-  // Convert ArrayBuffer to array of numbers for Workers AI
-  const audioArray = Array.from(new Uint8Array(audioBuffer));
+  // Workers AI expects Uint8Array for audio input
+  const audioData = new Uint8Array(audioBuffer);
 
   const response = await env.AI.run('@cf/openai/whisper-large-v3-turbo', {
-    audio: audioArray,
+    audio: [...audioData], // Spread into array for Workers AI
   }) as WhisperResponse;
 
   if (!response.text) {
