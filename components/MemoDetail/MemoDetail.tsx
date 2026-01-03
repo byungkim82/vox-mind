@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { getMemo, deleteMemo } from '@/lib/api/client';
 import type { MemoDetail as MemoDetailType, MemoCategory } from '@/lib/types';
@@ -47,12 +47,11 @@ function MemoDetailSkeleton() {
   );
 }
 
-interface MemoDetailProps {
-  id: string;
-}
-
-export function MemoDetail({ id }: MemoDetailProps) {
+export function MemoDetail() {
   const router = useRouter();
+  const params = useParams();
+  const id = params.id as string;
+
   const [memo, setMemo] = useState<MemoDetailType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -60,6 +59,10 @@ export function MemoDetail({ id }: MemoDetailProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
+    if (!id || id === '_placeholder') {
+      return;
+    }
+
     async function fetchMemo() {
       try {
         const data = await getMemo(id);

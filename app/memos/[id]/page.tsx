@@ -7,11 +7,6 @@ export function generateStaticParams() {
   return [{ id: '_placeholder' }];
 }
 
-export default async function MemoDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  return <MemoDetail id={id} />;
+export default function MemoDetailPage() {
+  return <MemoDetail />;
 }
