@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { sendChatMessage } from '@/lib/api/client';
+import { MemoDetailModal } from '@/components/MemoDetailModal';
 import type { ChatMessage, ChatSource } from '@/lib/types';
 
 function formatDate(dateString: string): string {
@@ -11,21 +12,21 @@ function formatDate(dateString: string): string {
   });
 }
 
-function SourceCard({ source }: { source: ChatSource }) {
+function SourceCard({ source, onClick }: { source: ChatSource; onClick: (id: string) => void }) {
   return (
-    <a
-      href={`/memos/${source.id}`}
-      className="block bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition-colors text-sm"
+    <button
+      onClick={() => onClick(source.id)}
+      className="block w-full text-left bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition-colors text-sm"
     >
       <div className="font-medium text-gray-900 line-clamp-1">{source.title}</div>
       <div className="text-gray-500 text-xs mt-1">
         {source.category} · {formatDate(source.created_at)}
       </div>
-    </a>
+    </button>
   );
 }
 
-function MessageBubble({ message }: { message: ChatMessage }) {
+function MessageBubble({ message, onSourceClick }: { message: ChatMessage; onSourceClick: (id: string) => void }) {
   const isUser = message.role === 'user';
 
   return (
@@ -43,7 +44,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
           <div className="mt-3 space-y-2">
             <p className="text-xs text-gray-500 font-medium">관련 메모:</p>
             {message.sources.map((source) => (
-              <SourceCard key={source.id} source={source} />
+              <SourceCard key={source.id} source={source} onClick={onSourceClick} />
             ))}
           </div>
         )}
@@ -56,8 +57,17 @@ export function ChatInterface() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedMemoId, setSelectedMemoId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleSourceClick = useCallback((id: string) => {
+    setSelectedMemoId(id);
+  }, []);
+
+  const handleModalClose = useCallback(() => {
+    setSelectedMemoId(null);
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -137,7 +147,7 @@ export function ChatInterface() {
         ) : (
           <>
             {messages.map((message) => (
-              <MessageBubble key={message.id} message={message} />
+              <MessageBubble key={message.id} message={message} onSourceClick={handleSourceClick} />
             ))}
             {isLoading && (
               <div className="flex justify-start">
@@ -191,6 +201,12 @@ export function ChatInterface() {
           </button>
         </form>
       </div>
+
+      {/* Memo detail modal */}
+      <MemoDetailModal
+        memoId={selectedMemoId}
+        onClose={handleModalClose}
+      />
     </div>
   );
 }

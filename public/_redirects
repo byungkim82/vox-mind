@@ -1,2 +1,0 @@
-# SPA fallback for dynamic memo routes
-/memos/:id /memos/_placeholder.html 200

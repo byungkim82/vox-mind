@@ -6,6 +6,7 @@ import type { MemoSummary, MemoCategory } from '@/lib/types';
 interface MemoCardProps {
   memo: MemoSummary;
   onDelete?: (id: string) => Promise<void>;
+  onClick?: (id: string) => void;
 }
 
 const categoryColors: Record<MemoCategory, { bg: string; text: string }> = {
@@ -38,7 +39,7 @@ function formatDate(dateString: string): string {
   }
 }
 
-export function MemoCard({ memo, onDelete }: MemoCardProps) {
+export function MemoCard({ memo, onDelete, onClick }: MemoCardProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const category = memo.category || '기타';
@@ -70,11 +71,15 @@ export function MemoCard({ memo, onDelete }: MemoCardProps) {
     setShowConfirm(false);
   };
 
+  const handleClick = () => {
+    onClick?.(memo.id);
+  };
+
   return (
     <div className="relative">
-      <a
-        href={`/memos/${memo.id}`}
-        className="block bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow"
+      <button
+        onClick={handleClick}
+        className="block w-full text-left bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow"
       >
         <div className="flex items-start justify-between gap-2 mb-2">
           <h3 className="font-semibold text-gray-900 line-clamp-1 flex-1">
@@ -105,7 +110,7 @@ export function MemoCard({ memo, onDelete }: MemoCardProps) {
         <div className="text-xs text-gray-400">
           {formatDate(memo.created_at)}
         </div>
-      </a>
+      </button>
 
       {/* Delete confirmation overlay */}
       {showConfirm && (

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { getMemos, deleteMemo } from '@/lib/api/client';
 import { MemoCard } from '@/components/MemoCard';
+import { MemoDetailModal } from '@/components/MemoDetailModal';
 import type { MemoSummary, MemoCategory } from '@/lib/types';
 
 const categories: (MemoCategory | 'all')[] = ['all', '업무', '개발', '일기', '아이디어', '학습', '기타'];
@@ -45,6 +46,7 @@ export function MemoList() {
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<MemoCategory | 'all'>(categoryParam || 'all');
   const [offset, setOffset] = useState(0);
+  const [selectedMemoId, setSelectedMemoId] = useState<string | null>(null);
   const limit = 20;
 
   const fetchMemos = useCallback(async (category: MemoCategory | 'all', newOffset: number) => {
@@ -97,6 +99,19 @@ export function MemoList() {
     setTotal((prev) => prev - 1);
   }, []);
 
+  const handleMemoClick = useCallback((id: string) => {
+    setSelectedMemoId(id);
+  }, []);
+
+  const handleModalClose = useCallback(() => {
+    setSelectedMemoId(null);
+  }, []);
+
+  const handleModalDelete = useCallback((id: string) => {
+    setMemos((prev) => prev.filter((memo) => memo.id !== id));
+    setTotal((prev) => prev - 1);
+  }, []);
+
   const hasMore = memos.length < total;
 
   return (
@@ -145,7 +160,7 @@ export function MemoList() {
       {/* Memo list */}
       <div className="space-y-3">
         {memos.map((memo) => (
-          <MemoCard key={memo.id} memo={memo} onDelete={handleDelete} />
+          <MemoCard key={memo.id} memo={memo} onDelete={handleDelete} onClick={handleMemoClick} />
         ))}
 
         {/* Loading skeletons */}
@@ -169,6 +184,13 @@ export function MemoList() {
           </button>
         </div>
       )}
+
+      {/* Memo detail modal */}
+      <MemoDetailModal
+        memoId={selectedMemoId}
+        onClose={handleModalClose}
+        onDelete={handleModalDelete}
+      />
     </div>
   );
 }

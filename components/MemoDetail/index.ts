@@ -1,1 +1,0 @@
-export { MemoDetail } from './MemoDetail';
