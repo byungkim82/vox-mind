@@ -4,9 +4,14 @@ export async function transcribeWithWorkersAI(
   audioBuffer: ArrayBuffer,
   env: Env
 ): Promise<string> {
-  // Try passing ArrayBuffer directly
+  // Convert ArrayBuffer to number[] for Workers AI Whisper
+  // Workers AI expects audio as number[] (byte array)
+  const audioInput = [...new Uint8Array(audioBuffer)];
+
+  console.log(`[STT] Audio input length: ${audioInput.length} bytes`);
+
   const response = await env.AI.run('@cf/openai/whisper-large-v3-turbo', {
-    audio: audioBuffer,
+    audio: audioInput,
   }) as WhisperResponse;
 
   if (!response.text) {
