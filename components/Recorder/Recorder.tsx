@@ -77,7 +77,7 @@ export function Recorder() {
       <Waveform
         dataArray={dataArray}
         isRecording={isRecording}
-        className="w-full h-32 bg-gray-100 rounded-lg"
+        className="w-full h-32 sm:h-48 bg-surface-dark/50 rounded-2xl"
       />
 
       {/* Timer */}
@@ -93,7 +93,7 @@ export function Recorder() {
 
       {/* Processing indicator */}
       {isProcessing && (
-        <p className="text-gray-600 text-sm animate-pulse">저장 중...</p>
+        <p className="text-text-secondary text-sm animate-pulse">저장 중...</p>
       )}
 
       {/* Toast notifications */}

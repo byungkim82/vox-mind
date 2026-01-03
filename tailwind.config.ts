@@ -11,6 +11,15 @@ const config: Config = {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
+        primary: "#13b6ec",
+        "background-dark": "#111e22",
+        "surface-dark": "#1a2c32",
+        "surface-lighter": "#233f48",
+        "text-secondary": "#92bbc9",
+      },
+      fontFamily: {
+        display: ["Inter", "Noto Sans KR", "sans-serif"],
+        body: ["Inter", "Noto Sans KR", "sans-serif"],
       },
     },
   },

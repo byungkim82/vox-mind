@@ -38,11 +38,16 @@ export function Navbar() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 md:relative md:border-t-0 md:border-b z-50">
+    <nav className="fixed bottom-0 left-0 right-0 bg-background-dark/95 backdrop-blur-md border-t border-surface-lighter md:relative md:border-t-0 md:border-b z-50">
       <div className="max-w-4xl mx-auto px-4">
         {/* Desktop header */}
         <div className="hidden md:flex items-center justify-between h-16">
-          <Link href="/" className="text-xl font-bold text-gray-900">
+          <Link href="/" className="flex items-center gap-2 text-xl font-bold text-white">
+            <span className="text-primary">
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+              </svg>
+            </span>
             Vox Mind
           </Link>
           <div className="flex gap-1">
@@ -52,10 +57,10 @@ export function Navbar() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${
                     isActive
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'text-gray-600 hover:bg-gray-100'
+                      ? 'bg-primary/10 text-primary border border-primary/20'
+                      : 'text-text-secondary hover:text-white hover:bg-surface-lighter'
                   }`}
                 >
                   <NavIcon icon={item.icon} />
@@ -76,8 +81,8 @@ export function Navbar() {
                 href={item.href}
                 className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors ${
                   isActive
-                    ? 'text-blue-600'
-                    : 'text-gray-500'
+                    ? 'text-primary'
+                    : 'text-text-secondary'
                 }`}
               >
                 <NavIcon icon={item.icon} />

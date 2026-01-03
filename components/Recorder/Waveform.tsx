@@ -56,7 +56,7 @@ export function Waveform({ dataArray, isRecording, className = '' }: WaveformPro
       ctx.beginPath();
       ctx.moveTo(0, height / 2);
       ctx.lineTo(width, height / 2);
-      ctx.strokeStyle = '#d1d5db'; // gray-300
+      ctx.strokeStyle = '#233f48'; // surface-lighter
       ctx.lineWidth = 2;
       ctx.stroke();
       return;
@@ -80,7 +80,7 @@ export function Waveform({ dataArray, isRecording, className = '' }: WaveformPro
     }
 
     ctx.lineTo(width, height / 2);
-    ctx.strokeStyle = '#3b82f6'; // blue-500
+    ctx.strokeStyle = '#13b6ec'; // primary
     ctx.lineWidth = 2;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
