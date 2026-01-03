@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Navbar } from "@/components/Navbar";
 
 export const metadata: Metadata = {
   title: "Vox Mind - AI Voice Memo",
@@ -13,8 +14,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <body className="antialiased">
-        {children}
+      <body className="antialiased bg-gray-50">
+        <Navbar />
+        <main className="pt-4 pb-20 md:pt-20 md:pb-8 px-4">
+          {children}
+        </main>
       </body>
     </html>
   );

@@ -1,0 +1,1 @@
+export { MemoDetail } from './MemoDetail';

@@ -1,0 +1,3 @@
+# SPA fallback for dynamic memo routes
+# All /memos/:id requests will be served by the placeholder page
+/memos/* /memos/_placeholder.html 200
