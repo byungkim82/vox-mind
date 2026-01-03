@@ -35,11 +35,32 @@ bucket_name = "vox-mind-audio-temp"
 binding = "AUDIO_BUCKET"
 bucket_name = "vox-mind-audio-temp"
 
-# Vectorize
+# Workers AI
+[ai]
+binding = "AI"
+
+# Workflows
+[[workflows]]
+name = "vox-mind-process"
+binding = "PROCESS_WORKFLOW"
+class_name = "ProcessMemoWorkflow"
+
+# Vectorize (1024d - BGE-M3)
 [[vectorize]]
 binding = "VECTORIZE"
-index_name = "vox-mind-embeddings"
+index_name = "vox-mind-embeddings-v2"
 
+# Production Workers AI
+[env.production.ai]
+binding = "AI"
+
+# Production Workflows
+[[env.production.workflows]]
+name = "vox-mind-process"
+binding = "PROCESS_WORKFLOW"
+class_name = "ProcessMemoWorkflow"
+
+# Production Vectorize
 [[env.production.vectorize]]
 binding = "VECTORIZE"
-index_name = "vox-mind-embeddings"
+index_name = "vox-mind-embeddings-v2"

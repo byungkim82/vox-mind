@@ -27,10 +27,11 @@ AI 기반 음성 메모 애플리케이션. **침묵에 끊기지 않는 녹음*
 - Cloudflare Vectorize (벡터 검색)
 - Cloudflare Access (인증)
 
-### AI Services
-- Groq (Whisper-large-v3-turbo) - STT
-- Gemini 2.0 Flash - 구조화 & RAG
-- Voyage 3.5-lite - Embedding (512차원)
+### AI Services (Cloudflare Workers AI)
+- `@cf/openai/whisper-large-v3-turbo` - STT
+- `@cf/meta/llama-4-scout-17b-16e-instruct` - 구조화
+- `@cf/baai/bge-m3` - Embedding (1024차원)
+- Cloudflare Workflows - 오케스트레이션
 
 ## 현재 상태
 - **Production 배포 완료**
@@ -74,41 +75,47 @@ CREATE TABLE memos (
 );
 ```
 
-## AI 파이프라인
+## AI 파이프라인 (Cloudflare Workflows)
 ```
 녹음 → R2 저장
-  → Groq STT (한영 혼용 전사)
-  → Gemini 구조화 (title, summary, category, action_items)
-  → Voyage 임베딩 (summary → 512차원 벡터)
-  → D1 저장 + Vectorize 저장
-  → R2 삭제
+  → POST /api/process (Workflow 트리거)
+  → [Workflow Steps]
+    1. fetch-audio: R2에서 오디오 로드
+    2. transcribe: Workers AI STT (@cf/openai/whisper-large-v3-turbo)
+    3. structure: Workers AI LLM (@cf/meta/llama-4-scout-17b-16e-instruct)
+    4. embed: Workers AI Embedding (@cf/baai/bge-m3, 1024d)
+    5. save-d1: D1에 메모 저장
+    6. save-vectorize: Vectorize에 벡터 저장
+    7. cleanup: R2 파일 삭제
+  → GET /api/process/:instanceId (폴링으로 상태 확인)
 ```
 
-## RAG 검색 플로우
+## RAG 검색 플로우 (미구현)
 ```
-질문 → Voyage 임베딩
+질문 → Workers AI 임베딩 (@cf/baai/bge-m3)
   → Vectorize 유사도 검색 (top-5)
   → D1에서 메모 상세 조회
-  → Gemini 답변 생성
+  → Workers AI LLM 답변 생성
   → { answer, sources }
 ```
 
 ## 주요 API 엔드포인트
 - `POST /api/upload` - 음성 파일 R2 업로드
-- `POST /api/process` - AI 파이프라인 실행
-- `GET /api/memos` - 메모 리스트 (페이지네이션, 필터링)
-- `GET /api/memos/:id` - 메모 상세
-- `DELETE /api/memos/:id` - 메모 삭제
-- `POST /api/chat` - RAG 검색
+- `POST /api/process` - Workflow 트리거 (비동기, instanceId 반환)
+- `GET /api/process/:instanceId` - Workflow 상태 조회
+- `GET /api/memos` - 메모 리스트 (페이지네이션, 필터링) [미구현]
+- `GET /api/memos/:id` - 메모 상세 [미구현]
+- `DELETE /api/memos/:id` - 메모 삭제 [미구현]
+- `POST /api/chat` - RAG 검색 [미구현]
 
 ## 개발 시 주의사항
 
 ### AI 프롬프트 핵심 규칙
-- Gemini 구조화: "한국어 문맥 속 영어 단어는 번역하지 말고 원문 유지"
+- LLM 구조화: "한국어 문맥 속 영어 단어는 번역하지 말고 원문 유지"
 - RAG 답변: "제공된 메모만 참고, 정보 없으면 '관련 메모 없음' 반환"
 
 ### 보안
-- 모든 API 키는 환경 변수 관리
+- Workers AI 사용으로 외부 API 키 불필요
 - R2 원본 파일은 처리 후 즉시 삭제
 - user_id 필터링 필수 (데이터 격리)
 
@@ -124,25 +131,30 @@ CREATE TABLE memos (
 ## 주요 파일 구조
 ```
 workers/
-├── api.ts                 # Hono API 서버
+├── api.ts                     # Hono API 서버 + Workflow export
+├── workflows/
+│   └── process-memo.ts        # Cloudflare Workflow (7-step 파이프라인)
 └── lib/
-    ├── auth-middleware.ts # Cloudflare Access JWT 검증
-    ├── groq-client.ts     # Groq STT
-    ├── gemini-client.ts   # Gemini 구조화
-    ├── voyage-client.ts   # Voyage 임베딩
-    └── types.ts           # 타입 정의
+    ├── auth-middleware.ts     # Cloudflare Access JWT 검증
+    ├── workers-ai-stt.ts      # Workers AI STT
+    ├── workers-ai-structure.ts # Workers AI 구조화
+    ├── workers-ai-embed.ts    # Workers AI 임베딩
+    └── types.ts               # 타입 정의
+
+lib/
+└── api/
+    └── client.ts              # 프론트엔드 API 클라이언트 (폴링 포함)
 
 components/
-├── Recorder/              # 녹음 UI 컴포넌트
-├── Toast/                 # 토스트 알림
-└── hooks/                 # 커스텀 훅 (useRecorder, useTimer 등)
+├── Recorder/                  # 녹음 UI 컴포넌트
+├── Toast/                     # 토스트 알림
+└── hooks/                     # 커스텀 훅 (useRecorder, useTimer 등)
 
 .github/workflows/
-└── deploy.yml             # CI/CD 파이프라인
+└── deploy.yml                 # CI/CD 파이프라인
 ```
 
 ## 참고 링크
-- [Cloudflare Workers Docs](https://developers.cloudflare.com/workers/)
-- [Groq API](https://console.groq.com/docs)
-- [Gemini API](https://ai.google.dev/docs)
-- [Voyage AI](https://docs.voyageai.com/)
+- [Cloudflare Workers AI](https://developers.cloudflare.com/workers-ai/)
+- [Cloudflare Workflows](https://developers.cloudflare.com/workflows/)
+- [Cloudflare Vectorize](https://developers.cloudflare.com/vectorize/)

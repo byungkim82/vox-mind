@@ -87,9 +87,6 @@ jobs:
 
       - name: Set Workers Secrets
         run: |
-          echo "${{ secrets.GROQ_API_KEY }}" | npx wrangler secret put GROQ_API_KEY
-          echo "${{ secrets.GEMINI_API_KEY }}" | npx wrangler secret put GEMINI_API_KEY
-          echo "${{ secrets.VOYAGE_API_KEY }}" | npx wrangler secret put VOYAGE_API_KEY
           if [ -n "${{ secrets.CF_ACCESS_AUD }}" ]; then
             echo "${{ secrets.CF_ACCESS_AUD }}" | npx wrangler secret put CF_ACCESS_AUD
           fi

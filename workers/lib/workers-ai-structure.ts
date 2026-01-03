@@ -1,4 +1,4 @@
-import type { Env, MemoStructure } from './types';
+import type { Env, MemoStructure, LlamaResponse } from './types';
 
 const SYSTEM_PROMPT = `당신은 음성 메모를 분석하는 AI 어시스턴트입니다.
 사용자가 녹음한 내용에서 핵심 정보를 추출하세요.
@@ -17,49 +17,32 @@ const SYSTEM_PROMPT = `당신은 음성 메모를 분석하는 AI 어시스턴�
   "action_items": ["할 일 1", "할 일 2"]
 }`;
 
-export async function structureMemo(
+export async function structureWithWorkersAI(
   rawText: string,
   env: Env
 ): Promise<MemoStructure> {
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${env.GEMINI_API_KEY}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: `${SYSTEM_PROMPT}\n\n다음 음성 메모를 분석해주세요:\n\n${rawText}`
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.3,
-          topP: 0.8,
-          topK: 40,
-          maxOutputTokens: 500,
-        }
-      }),
-    }
-  );
+  const response = await env.AI.run('@cf/meta/llama-4-scout-17b-16e-instruct', {
+    messages: [
+      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'user', content: `다음 음성 메모를 분석해주세요:\n\n${rawText}` },
+    ],
+    max_tokens: 500,
+    temperature: 0.3,
+  }) as LlamaResponse;
 
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Gemini API failed: ${response.status} ${error}`);
-  }
-
-  const data = await response.json();
-  const text = data.candidates[0].content.parts[0].text;
+  const text = response.response || '';
 
   // Extract JSON from markdown code blocks or direct JSON
   const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/) || text.match(/\{[\s\S]*\}/);
+
   if (!jsonMatch) {
-    throw new Error('Failed to extract JSON from Gemini response');
+    throw new Error('Workers AI Structure: JSON 추출 실패');
   }
 
   const parsed = JSON.parse(jsonMatch[1] || jsonMatch[0]) as MemoStructure;
 
   if (!parsed.title || !parsed.summary || !parsed.category) {
-    throw new Error('Gemini response missing required fields');
+    throw new Error('Workers AI Structure: 필수 필드 누락');
   }
 
   return parsed;

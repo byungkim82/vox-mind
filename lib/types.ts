@@ -51,6 +51,26 @@ export interface ApiError {
   details?: string;
 }
 
+// Workflow API Types
+export interface ProcessStartResponse {
+  instanceId: string;
+  status: 'queued';
+  message: string;
+}
+
+export interface ProcessStatusResponse {
+  instanceId: string;
+  status: 'queued' | 'running' | 'paused' | 'errored' | 'complete' | 'terminated';
+  output?: {
+    memoId: string;
+    title: string;
+    summary: string;
+    category: MemoCategory;
+    actionItems: string[];
+  };
+  error?: string;
+}
+
 // Toast types
 export type ToastType = 'success' | 'error' | 'info';
 
