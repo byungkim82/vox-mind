@@ -7,6 +7,8 @@ compatibility_flags = ["nodejs_compat"]
 [vars]
 ENVIRONMENT = "production"
 ALLOWED_ORIGINS = "https://vox-mind.pages.dev,http://localhost:3000,http://localhost:3001"
+# R2 Presigned URL 생성에 필요 (실제 값으로 교체 필요)
+CLOUDFLARE_ACCOUNT_ID = "c20598b7e5410e23541b2f02ee4c9478"
 
 # Production environment
 [env.production]
@@ -15,6 +17,8 @@ workers_dev = false
 [env.production.vars]
 ENVIRONMENT = "production"
 ALLOWED_ORIGINS = "https://vox-mind.pages.dev,https://d8aef709.vox-mind.pages.dev"
+# R2 Presigned URL 생성에 필요 (실제 값으로 교체 필요)
+CLOUDFLARE_ACCOUNT_ID = "c20598b7e5410e23541b2f02ee4c9478"
 
 # D1 Database
 [[d1_databases]]

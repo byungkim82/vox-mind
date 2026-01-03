@@ -1,6 +1,7 @@
 import { WorkflowEntrypoint, WorkflowStep, WorkflowEvent } from 'cloudflare:workers';
 import type { Env, WorkflowParams, MemoCategory } from '../lib/types';
-import { transcribeWithWorkersAI } from '../lib/workers-ai-stt';
+import { generatePresignedUrl } from '../lib/r2-presigned';
+import { transcribeWithGroq } from '../lib/groq-stt';
 import { structureWithWorkersAI } from '../lib/workers-ai-structure';
 import { embedWithWorkersAI } from '../lib/workers-ai-embed';
 
@@ -9,28 +10,23 @@ export class ProcessMemoWorkflow extends WorkflowEntrypoint<Env, WorkflowParams>
     const { fileId, fileName, userId } = event.payload;
     console.log(`[${fileId}] Workflow 시작`);
 
-    // Step 1: Fetch audio from R2 and transcribe with Workers AI STT
-    // Combined into one step to avoid ArrayBuffer serialization issues
+    // Step 1: Generate presigned URL and transcribe with Groq
     const rawText = await step.do(
-      'fetch-and-transcribe',
+      'transcribe-groq',
       {
         retries: { limit: 3, delay: '5 seconds', backoff: 'exponential' },
-        timeout: '10 minutes',
+        timeout: '5 minutes', // Groq는 빠르므로 시간 단축
       },
       async () => {
-        // Fetch from R2
-        console.log(`[${fileId}] R2에서 파일 가져오는 중...`);
-        const file = await this.env.AUDIO_BUCKET.get(fileName);
-        if (!file) {
-          throw new Error(`파일 없음: ${fileName}`);
-        }
-        const audioBuffer = await file.arrayBuffer();
-        console.log(`[${fileId}] R2 파일 크기: ${audioBuffer.byteLength} bytes`);
+        // Generate presigned URL for R2 object
+        console.log(`[${fileId}] Presigned URL 생성 중...`);
+        const audioUrl = await generatePresignedUrl(fileName, this.env);
+        console.log(`[${fileId}] Presigned URL 생성 완료`);
 
-        // Transcribe with Workers AI
-        console.log(`[${fileId}] STT 시작...`);
-        const text = await transcribeWithWorkersAI(audioBuffer, this.env);
-        console.log(`[${fileId}] STT 완료: ${text.length} 글자`);
+        // Transcribe with Groq Whisper Large v3 Turbo
+        console.log(`[${fileId}] Groq STT 시작...`);
+        const text = await transcribeWithGroq(audioUrl, this.env);
+        console.log(`[${fileId}] Groq STT 완료: ${text.length} 글자`);
         return text;
       }
     );
