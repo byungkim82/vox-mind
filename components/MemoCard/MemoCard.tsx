@@ -56,10 +56,15 @@ const categoryStyles: Record<MemoCategory, {
 function formatDate(dateString: string): string {
   const date = new Date(dateString);
   const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-  if (diffDays === 0) {
+  // 로컬 시간 기준으로 날짜만 비교 (시간 제외)
+  const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const nowOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  const diffMs = nowOnly.getTime() - dateOnly.getTime();
+  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays <= 0) {
     return '오늘';
   } else if (diffDays === 1) {
     return '어제';
