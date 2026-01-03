@@ -1,17 +1,18 @@
+import { Buffer } from 'node:buffer';
 import type { Env, WhisperResponse } from './types';
 
 export async function transcribeWithWorkersAI(
   audioBuffer: ArrayBuffer,
   env: Env
 ): Promise<string> {
-  // Convert ArrayBuffer to number[] for Workers AI Whisper
-  // Workers AI expects audio as number[] (byte array)
-  const audioInput = [...new Uint8Array(audioBuffer)];
+  // Convert ArrayBuffer to Base64 string for Workers AI Whisper
+  // Workers AI expects audio as Base64 encoded string
+  const base64Audio = Buffer.from(audioBuffer).toString('base64');
 
-  console.log(`[STT] Audio input length: ${audioInput.length} bytes`);
+  console.log(`[STT] Audio base64 length: ${base64Audio.length} chars`);
 
   const response = await env.AI.run('@cf/openai/whisper-large-v3-turbo', {
-    audio: audioInput,
+    audio: base64Audio,
   }) as WhisperResponse;
 
   if (!response.text) {
