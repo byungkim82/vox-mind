@@ -310,13 +310,31 @@ app.post('/api/chat', authMiddleware, async (c) => {
     const questionEmbedding = embeddingResponse.data[0];
 
     // Step 2: Search Vectorize for similar memos
+    console.log('[RAG] Searching with user_id:', auth.userId);
+
     const searchResults = await c.env.VECTORIZE.query(questionEmbedding, {
       topK: 5,
       filter: { user_id: auth.userId },
       returnMetadata: 'all',
     });
 
+    console.log('[RAG] Search results:', JSON.stringify({
+      count: searchResults.count,
+      matchesLength: searchResults.matches?.length || 0,
+      matches: searchResults.matches?.map(m => ({ id: m.id, score: m.score, metadata: m.metadata }))
+    }));
+
     if (!searchResults.matches || searchResults.matches.length === 0) {
+      // Debug: Try searching without filter to see if it's a filter issue
+      const debugResults = await c.env.VECTORIZE.query(questionEmbedding, {
+        topK: 5,
+        returnMetadata: 'all',
+      });
+      console.log('[RAG] Debug search without filter:', JSON.stringify({
+        count: debugResults.count,
+        matches: debugResults.matches?.map(m => ({ id: m.id, metadata: m.metadata }))
+      }));
+
       return c.json({
         answer: '관련된 메모를 찾을 수 없습니다. 먼저 음성 메모를 녹음해주세요.',
         sources: [],

@@ -34,8 +34,10 @@ AI 기반 음성 메모 애플리케이션. **침묵에 끊기지 않는 녹음*
 - Cloudflare Workflows - 오케스트레이션
 
 ## 현재 상태
-- **Production 배포 완료**
+- **Production 배포 완료** - 모든 핵심 기능 구현 완료
 - Workers AI + Workflows 마이그레이션 완료 (2026-01-03)
+- Phase 2 완료: 메모 관리 UI (리스트, 상세, 삭제)
+- Phase 3 완료: RAG 검색 (대화형 AI 검색)
 - 녹음 → Workflow 처리 → D1/Vectorize 저장 동작 확인
 - 평균 처리 시간: ~3.5초
 
@@ -49,12 +51,12 @@ AI 기반 음성 메모 애플리케이션. **침묵에 끊기지 않는 녹음*
 - main 브랜치 push 시 자동 배포
 - Lint/TypeCheck → Build → Secrets 동기화 → Workers/Pages 배포
 
-## 다음 작업
-1. GET /api/memos 엔드포인트 구현
-2. 메모 리스트 UI 구현
-3. 메모 상세 페이지 구현
-4. 삭제 기능 구현
-5. RAG 검색 (POST /api/chat) 구현
+## 향후 개선 사항
+- 메모 수정 기능
+- 카테고리 필터링 UI
+- 메모 검색 (텍스트 기반)
+- 액션 아이템 체크리스트 UI
+- PWA 지원 (오프라인 녹음)
 
 ## 주요 문서 위치
 - `PRD.md` - 상세 제품 요구사항 문서
@@ -89,7 +91,7 @@ CREATE TABLE memos (
   → GET /api/process/:instanceId (폴링으로 상태 확인)
 ```
 
-## RAG 검색 플로우 (미구현)
+## RAG 검색 플로우
 ```
 질문 → Workers AI 임베딩 (@cf/baai/bge-m3)
   → Vectorize 유사도 검색 (top-5)
@@ -102,10 +104,10 @@ CREATE TABLE memos (
 - `POST /api/upload` - 음성 파일 R2 업로드
 - `POST /api/process` - Workflow 트리거 (비동기, instanceId 반환)
 - `GET /api/process/:instanceId` - Workflow 상태 조회
-- `GET /api/memos` - 메모 리스트 (페이지네이션, 필터링) [미구현]
-- `GET /api/memos/:id` - 메모 상세 [미구현]
-- `DELETE /api/memos/:id` - 메모 삭제 [미구현]
-- `POST /api/chat` - RAG 검색 [미구현]
+- `GET /api/memos` - 메모 리스트 (페이지네이션, 필터링)
+- `GET /api/memos/:id` - 메모 상세
+- `DELETE /api/memos/:id` - 메모 삭제 (D1 + Vectorize)
+- `POST /api/chat` - RAG 검색 (대화형 AI 답변)
 
 ## 개발 시 주의사항
 
@@ -140,12 +142,24 @@ workers/
     ├── workers-ai-embed.ts    # Workers AI 임베딩
     └── types.ts               # 타입 정의
 
+app/
+├── page.tsx                   # 홈 (녹음 페이지)
+├── memos/
+│   ├── page.tsx               # 메모 리스트 페이지
+│   └── [id]/page.tsx          # 메모 상세 페이지
+└── search/
+    └── page.tsx               # RAG 검색 페이지
+
 lib/
-└── api/
-    └── client.ts              # 프론트엔드 API 클라이언트 (폴링 포함)
+├── api/
+│   └── client.ts              # 프론트엔드 API 클라이언트
+└── types.ts                   # 공통 타입 정의
 
 components/
 ├── Recorder/                  # 녹음 UI 컴포넌트
+├── MemoList/                  # 메모 리스트 컴포넌트
+├── MemoDetail/                # 메모 상세 컴포넌트
+├── ChatInterface/             # RAG 채팅 UI 컴포넌트
 ├── Toast/                     # 토스트 알림
 └── hooks/                     # 커스텀 훅 (useRecorder, useTimer 등)
 
