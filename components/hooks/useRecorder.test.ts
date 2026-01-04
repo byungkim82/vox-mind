@@ -113,7 +113,7 @@ describe('useRecorder', () => {
 
     vi.stubGlobal('navigator', {
       mediaDevices: {
-        getUserMedia: vi.fn().mockResolvedValue(new MockMediaStream()),
+        getUserMedia: vi.fn().mockResolvedValue(new MockMediaStream() as unknown as MediaStream),
       },
     });
   });
@@ -193,7 +193,7 @@ describe('useRecorder', () => {
       expect(result.current.error).toBe('Test error');
 
       // Reset mock for next call
-      vi.mocked(navigator.mediaDevices.getUserMedia).mockResolvedValue(new MockMediaStream());
+      vi.mocked(navigator.mediaDevices.getUserMedia).mockResolvedValue(new MockMediaStream() as unknown as MediaStream);
 
       await act(async () => {
         await result.current.startRecording();
@@ -414,7 +414,7 @@ describe('useRecorder', () => {
   describe('cleanup', () => {
     it('stops tracks on cleanup', async () => {
       const mockStream = new MockMediaStream();
-      vi.mocked(navigator.mediaDevices.getUserMedia).mockResolvedValue(mockStream);
+      vi.mocked(navigator.mediaDevices.getUserMedia).mockResolvedValue(mockStream as unknown as MediaStream);
 
       const { result, unmount } = renderHook(() => useRecorder());
 

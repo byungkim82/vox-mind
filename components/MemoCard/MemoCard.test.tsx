@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoCard } from './MemoCard';
-import type { MemoSummary } from '@/lib/types';
+import type { MemoSummary, MemoCategory } from '@/lib/types';
 
 const createMockMemo = (overrides: Partial<MemoSummary> = {}): MemoSummary => ({
   id: 'test-id',
   title: 'Test Memo Title',
   summary: 'This is a test summary for the memo',
-  category: '개발',
+  category: '개발' as MemoCategory,
   created_at: '2024-01-15T10:00:00',
   updated_at: '2024-01-15T10:00:00',
   ...overrides,

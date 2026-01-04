@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { MemoList } from './MemoList';
+import type { MemoSummary, MemoCategory } from '@/lib/types';
 
 // Mock Next.js navigation
 const mockPush = vi.fn();
@@ -61,12 +62,12 @@ describe('MemoList', () => {
     vi.resetAllMocks();
   });
 
-  const mockMemos = [
+  const mockMemos: MemoSummary[] = [
     {
       id: 'memo-1',
       title: 'First Memo',
       summary: 'Summary 1',
-      category: '개발',
+      category: '개발' as MemoCategory,
       created_at: '2024-01-15T10:00:00Z',
       updated_at: '2024-01-15T10:00:00Z',
     },
@@ -74,7 +75,7 @@ describe('MemoList', () => {
       id: 'memo-2',
       title: 'Second Memo',
       summary: 'Summary 2',
-      category: '업무',
+      category: '업무' as MemoCategory,
       created_at: '2024-01-14T10:00:00Z',
       updated_at: '2024-01-14T10:00:00Z',
     },
@@ -314,7 +315,7 @@ describe('MemoList', () => {
               id: 'memo-3',
               title: 'Third Memo',
               summary: 'Summary 3',
-              category: '아이디어',
+              category: '아이디어' as MemoCategory,
               created_at: '2024-01-13T10:00:00Z',
               updated_at: '2024-01-13T10:00:00Z',
             },

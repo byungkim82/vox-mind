@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { MemoDetailModal } from './MemoDetailModal';
+import type { MemoDetail, MemoCategory } from '@/lib/types';
 
 // Mock API client
 vi.mock('@/lib/api/client', () => ({
@@ -21,13 +22,13 @@ describe('MemoDetailModal', () => {
     document.body.style.overflow = '';
   });
 
-  const mockMemo = {
+  const mockMemo: MemoDetail = {
     id: 'memo-123',
     user_id: 'user-1',
     raw_text: 'This is the full transcription text.',
     title: 'Test Memo',
     summary: 'This is a summary of the memo.',
-    category: '개발',
+    category: '개발' as MemoCategory,
     action_items: ['Task 1', 'Task 2', 'Task 3'],
     audio_file_name: 'recording.webm',
     created_at: '2024-01-15T10:00:00Z',

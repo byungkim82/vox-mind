@@ -163,7 +163,7 @@ describe('useAudioAnalyzer', () => {
         { initialProps: { node: mockAnalyserNode as unknown as AnalyserNode } }
       );
 
-      rerender({ node: null });
+      rerender({ node: null as unknown as AnalyserNode });
 
       expect(cancelAnimationFrame).toHaveBeenCalled();
     });
@@ -183,7 +183,7 @@ describe('useAudioAnalyzer', () => {
 
       expect(result.current.dataArray).not.toBeNull();
 
-      rerender({ node: null });
+      rerender({ node: null as unknown as AnalyserNode });
 
       expect(result.current.dataArray).toBeNull();
     });

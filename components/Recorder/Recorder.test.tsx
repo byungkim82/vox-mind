@@ -23,6 +23,7 @@ vi.mock('../hooks', () => ({
     dataArray: new Uint8Array(128),
   })),
   useTimer: vi.fn(() => ({
+    elapsedSeconds: 0,
     formattedTime: '00:00',
   })),
   useToast: vi.fn(() => ({
@@ -62,6 +63,7 @@ describe('Recorder', () => {
 
     it('shows timer from useTimer hook', () => {
       vi.mocked(useTimer).mockReturnValue({
+        elapsedSeconds: 90,
         formattedTime: '01:30',
       });
 
