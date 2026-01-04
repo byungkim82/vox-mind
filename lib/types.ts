@@ -6,6 +6,7 @@ export interface Memo {
   summary: string | null;
   category: MemoCategory | null;
   action_items: string | null; // JSON string
+  audio_file_name: string | null; // R2 audio file reference
   created_at: string;
   updated_at: string;
 }
@@ -129,4 +130,9 @@ export interface ChatResponse {
 export interface DeleteResponse {
   success: boolean;
   message: string;
+}
+
+// Audio URL response
+export interface AudioUrlResponse {
+  audioUrl: string;
 }

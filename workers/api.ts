@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import type { Env, AuthContext, WorkflowResult } from './lib/types';
 import { createAuthMiddleware, getAuth } from './lib/auth-middleware';
+import { generatePresignedUrl } from './lib/r2-presigned';
 
 // Export Workflow for wrangler
 export { ProcessMemoWorkflow } from './workflows/process-memo';
@@ -250,16 +251,47 @@ app.get('/api/memos/:id', authMiddleware, async (c) => {
   }
 });
 
+// GET /api/memos/:id/audio - Get presigned URL for audio playback
+app.get('/api/memos/:id/audio', authMiddleware, async (c) => {
+  try {
+    const auth = getAuth(c);
+    const memoId = c.req.param('id');
+
+    const memo = await c.env.DB.prepare(`
+      SELECT audio_file_name FROM memos WHERE id = ? AND user_id = ?
+    `).bind(memoId, auth.userId).first<{ audio_file_name: string | null }>();
+
+    if (!memo) {
+      return c.json({ error: '메모를 찾을 수 없습니다' }, 404);
+    }
+
+    if (!memo.audio_file_name) {
+      return c.json({ error: '오디오 파일이 없습니다' }, 404);
+    }
+
+    const audioUrl = await generatePresignedUrl(memo.audio_file_name, c.env, 3600);
+
+    return c.json({ audioUrl });
+
+  } catch (error) {
+    console.error('Get audio URL error:', error);
+    return c.json({
+      error: '오디오 URL 생성 실패',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, 500);
+  }
+});
+
 // DELETE /api/memos/:id - Delete memo
 app.delete('/api/memos/:id', authMiddleware, async (c) => {
   try {
     const auth = getAuth(c);
     const memoId = c.req.param('id');
 
-    // Check if memo exists and belongs to user
+    // Check if memo exists and get audio_file_name
     const memo = await c.env.DB.prepare(`
-      SELECT id FROM memos WHERE id = ? AND user_id = ?
-    `).bind(memoId, auth.userId).first();
+      SELECT id, audio_file_name FROM memos WHERE id = ? AND user_id = ?
+    `).bind(memoId, auth.userId).first<{ id: string; audio_file_name: string | null }>();
 
     if (!memo) {
       return c.json({ error: '메모를 찾을 수 없습니다' }, 404);
@@ -275,6 +307,16 @@ app.delete('/api/memos/:id', authMiddleware, async (c) => {
       await c.env.VECTORIZE.deleteByIds([memoId]);
     } catch (vectorError) {
       console.error('Vectorize delete error (non-fatal):', vectorError);
+    }
+
+    // Delete audio file from R2
+    if (memo.audio_file_name) {
+      try {
+        await c.env.AUDIO_BUCKET.delete(memo.audio_file_name);
+        console.log(`R2 audio file deleted: ${memo.audio_file_name}`);
+      } catch (r2Error) {
+        console.error('R2 delete error (non-fatal):', r2Error);
+      }
     }
 
     return c.json({ success: true, message: '메모가 삭제되었습니다' });

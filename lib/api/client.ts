@@ -9,6 +9,7 @@ import type {
   MemoCategory,
   ChatResponse,
   DeleteResponse,
+  AudioUrlResponse,
 } from '../types';
 
 // In production, use same origin (Pages Functions proxy)
@@ -185,6 +186,20 @@ export async function deleteMemo(id: string): Promise<DeleteResponse> {
   if (!response.ok) {
     const error: ApiError = await response.json();
     throw new Error(error.error || '메모 삭제 실패');
+  }
+
+  return response.json();
+}
+
+export async function getAudioUrl(memoId: string): Promise<AudioUrlResponse> {
+  const response = await fetch(`${API_BASE}/api/memos/${memoId}/audio`, {
+    method: 'GET',
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const error: ApiError = await response.json();
+    throw new Error(error.error || '오디오 URL 조회 실패');
   }
 
   return response.json();

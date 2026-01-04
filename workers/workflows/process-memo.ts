@@ -72,8 +72,8 @@ export class ProcessMemoWorkflow extends WorkflowEntrypoint<Env, WorkflowParams>
         const id = crypto.randomUUID();
         console.log(`[${fileId}] D1 저장 중: ${id}`);
         await this.env.DB.prepare(`
-          INSERT INTO memos (id, user_id, raw_text, title, summary, category, action_items)
-          VALUES (?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO memos (id, user_id, raw_text, title, summary, category, action_items, audio_file_name)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
           id,
           userId,
@@ -81,7 +81,8 @@ export class ProcessMemoWorkflow extends WorkflowEntrypoint<Env, WorkflowParams>
           structure.title,
           structure.summary,
           structure.category,
-          JSON.stringify(structure.action_items)
+          JSON.stringify(structure.action_items),
+          fileName
         ).run();
         console.log(`[${fileId}] D1 저장 완료`);
         return id;
@@ -106,19 +107,7 @@ export class ProcessMemoWorkflow extends WorkflowEntrypoint<Env, WorkflowParams>
       }
     );
 
-    // Step 7: Cleanup R2
-    await step.do(
-      'cleanup',
-      {
-        retries: { limit: 2, delay: '1 second', backoff: 'constant' },
-        timeout: '30 seconds',
-      },
-      async () => {
-        console.log(`[${fileId}] R2 파일 삭제 중...`);
-        await this.env.AUDIO_BUCKET.delete(fileName);
-        console.log(`[${fileId}] R2 파일 삭제 완료`);
-      }
-    );
+    // Note: R2 audio file is retained for playback (no cleanup step)
 
     console.log(`[${fileId}] Workflow 완료`);
 
