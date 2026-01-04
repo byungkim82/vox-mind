@@ -55,14 +55,6 @@ export interface MemoStructure {
   action_items: string[];
 }
 
-// Workers AI Whisper Response
-export interface WhisperResponse {
-  text: string;
-  word_count?: number;
-  words?: Array<{ word: string; start: number; end: number }>;
-  vtt?: string;
-}
-
 // Workers AI BGE-M3 Response
 export interface BGEEmbeddingResponse {
   shape: number[];
@@ -90,16 +82,3 @@ export interface WorkflowResult {
   actionItems: string[];
 }
 
-// API Response Types
-export interface ProcessStartResponse {
-  instanceId: string;
-  status: 'queued';
-  message: string;
-}
-
-export interface ProcessStatusResponse {
-  instanceId: string;
-  status: 'queued' | 'running' | 'paused' | 'errored' | 'complete' | 'terminated';
-  output?: WorkflowResult;
-  error?: string;
-}

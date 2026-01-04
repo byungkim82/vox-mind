@@ -1,16 +1,3 @@
-export interface Memo {
-  id: string;
-  user_id: string;
-  raw_text: string;
-  title: string | null;
-  summary: string | null;
-  category: MemoCategory | null;
-  action_items: string | null; // JSON string
-  audio_file_name: string | null; // R2 audio file reference
-  created_at: string;
-  updated_at: string;
-}
-
 export type MemoCategory =
   | '업무'
   | '개발'
@@ -18,13 +5,6 @@ export type MemoCategory =
   | '아이디어'
   | '학습'
   | '기타';
-
-export interface MemoStructure {
-  title: string;
-  summary: string;
-  category: MemoCategory;
-  action_items: string[];
-}
 
 // Recording states
 export type RecordingState = 'idle' | 'recording' | 'processing';
@@ -38,15 +18,6 @@ export interface UploadResponse {
   type: string;
 }
 
-export interface ProcessResponse {
-  memoId: string;
-  title: string;
-  summary: string;
-  category: MemoCategory;
-  actionItems: string[];
-  rawTextLength: number;
-}
-
 export interface ApiError {
   error: string;
   details?: string;
@@ -57,19 +28,6 @@ export interface ProcessStartResponse {
   instanceId: string;
   status: 'queued';
   message: string;
-}
-
-export interface ProcessStatusResponse {
-  instanceId: string;
-  status: 'queued' | 'running' | 'paused' | 'errored' | 'complete' | 'terminated';
-  output?: {
-    memoId: string;
-    title: string;
-    summary: string;
-    category: MemoCategory;
-    actionItems: string[];
-  };
-  error?: string;
 }
 
 // Toast types
@@ -100,8 +58,17 @@ export interface MemoSummary {
 }
 
 // Memo detail (with parsed action_items)
-export interface MemoDetail extends Omit<Memo, 'action_items'> {
+export interface MemoDetail {
+  id: string;
+  user_id: string;
+  raw_text: string;
+  title: string | null;
+  summary: string | null;
+  category: MemoCategory | null;
   action_items: string[];
+  audio_file_name: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 // Chat types
