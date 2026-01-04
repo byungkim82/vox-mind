@@ -5,9 +5,10 @@ AI 기반 음성 메모 애플리케이션. **침묵에 끊기지 않는 녹음*
 
 ## 핵심 차별점
 - VAD 없이 사용자가 멈출 때까지 무중단 녹음
-- 한영 혼용(Code-switching) STT 지원
+- 한영 혼용(Code-switching) STT 지원 (Groq Whisper)
 - AI 자동 구조화 (제목, 요약, 카테고리, 액션 아이템)
-- Cloudflare Workers AI로 월 $0 운영 (외부 API 비용 없음)
+- 오디오 재생 기능 (메모 상세에서 원본 녹음 청취 가능)
+- Cloudflare 인프라로 저비용 운영 (Groq STT: $0.04/시간)
 
 ## 기술 스택
 
@@ -23,23 +24,23 @@ AI 기반 음성 메모 애플리케이션. **침묵에 끊기지 않는 녹음*
 - Cloudflare Pages (Frontend)
 - Cloudflare Workers (Backend)
 - Cloudflare D1 (SQLite)
-- Cloudflare R2 (임시 음성 파일)
+- Cloudflare R2 (음성 파일 영구 저장 + 재생)
 - Cloudflare Vectorize (벡터 검색)
 - Cloudflare Access (인증)
 
-### AI Services (Cloudflare Workers AI)
-- `@cf/openai/whisper-large-v3-turbo` - STT
-- `@cf/meta/llama-4-scout-17b-16e-instruct` - 구조화
-- `@cf/baai/bge-m3` - Embedding (1024차원)
+### AI Services
+- **Groq** `whisper-large-v3-turbo` - STT (100MB 지원, ~299x 빠름)
+- **Workers AI** `@cf/meta/llama-4-scout-17b-16e-instruct` - 구조화
+- **Workers AI** `@cf/baai/bge-m3` - Embedding (1024차원)
 - Cloudflare Workflows - 오케스트레이션
 
 ## 현재 상태
 - **Production 배포 완료** - 모든 핵심 기능 구현 완료
-- Workers AI + Workflows 마이그레이션 완료 (2026-01-03)
-- Phase 2 완료: 메모 관리 UI (리스트, 상세, 삭제)
-- Phase 3 완료: RAG 검색 (대화형 AI 검색)
+- Groq Whisper STT 마이그레이션 완료 (100MB 파일 지원)
+- R2 오디오 영구 저장 + 메모 상세 오디오 재생 기능
+- 다크 테마 디자인 적용
+- 메모 상세: 페이지 → 모달 방식으로 변경
 - 녹음 → Workflow 처리 → D1/Vectorize 저장 동작 확인
-- 평균 처리 시간: ~3.5초
 
 ## 배포 URL
 - **Frontend**: https://vox-mind.pages.dev
@@ -71,6 +72,7 @@ CREATE TABLE memos (
   summary TEXT,                   -- AI 생성 요약
   category TEXT,                  -- 업무|개발|일기|아이디어|학습|기타
   action_items TEXT,              -- JSON 배열
+  audio_file_name TEXT,           -- R2 오디오 파일명 (재생용)
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -81,13 +83,12 @@ CREATE TABLE memos (
 녹음 → R2 저장
   → POST /api/process (Workflow 트리거)
   → [Workflow Steps]
-    1. fetch-audio: R2에서 오디오 로드
-    2. transcribe: Workers AI STT (@cf/openai/whisper-large-v3-turbo)
-    3. structure: Workers AI LLM (@cf/meta/llama-4-scout-17b-16e-instruct)
-    4. embed: Workers AI Embedding (@cf/baai/bge-m3, 1024d)
-    5. save-d1: D1에 메모 저장
-    6. save-vectorize: Vectorize에 벡터 저장
-    7. cleanup: R2 파일 삭제
+    1. transcribe-groq: R2 presigned URL → Groq Whisper STT
+    2. structure: Workers AI LLM (@cf/meta/llama-4-scout-17b-16e-instruct)
+    3. embed: Workers AI Embedding (@cf/baai/bge-m3, 1024d)
+    4. save-d1: D1에 메모 저장 (audio_file_name 포함)
+    5. save-vectorize: Vectorize에 벡터 저장
+    (R2 오디오 파일은 재생을 위해 유지)
   → GET /api/process/:instanceId (폴링으로 상태 확인)
 ```
 
@@ -106,7 +107,8 @@ CREATE TABLE memos (
 - `GET /api/process/:instanceId` - Workflow 상태 조회
 - `GET /api/memos` - 메모 리스트 (페이지네이션, 필터링)
 - `GET /api/memos/:id` - 메모 상세
-- `DELETE /api/memos/:id` - 메모 삭제 (D1 + Vectorize)
+- `GET /api/memos/:id/audio` - 오디오 재생용 presigned URL
+- `DELETE /api/memos/:id` - 메모 삭제 (D1 + Vectorize + R2)
 - `POST /api/chat` - RAG 검색 (대화형 AI 답변)
 
 ## 개발 시 주의사항
@@ -116,9 +118,10 @@ CREATE TABLE memos (
 - RAG 답변: "제공된 메모만 참고, 정보 없으면 '관련 메모 없음' 반환"
 
 ### 보안
-- Workers AI 사용으로 외부 API 키 불필요
-- R2 원본 파일은 처리 후 즉시 삭제
+- Groq API 키 필요 (STT용)
+- R2 파일은 영구 저장 (presigned URL로 접근, 1시간 유효)
 - user_id 필터링 필수 (데이터 격리)
+- 메모 삭제 시 R2 파일도 함께 삭제
 
 ### 성능 목표
 - STT 처리 < 녹음 길이의 20%
@@ -134,10 +137,11 @@ CREATE TABLE memos (
 workers/
 ├── api.ts                     # Hono API 서버 + Workflow export
 ├── workflows/
-│   └── process-memo.ts        # Cloudflare Workflow (7-step 파이프라인)
+│   └── process-memo.ts        # Cloudflare Workflow (5-step 파이프라인)
 └── lib/
     ├── auth-middleware.ts     # Cloudflare Access JWT 검증
-    ├── workers-ai-stt.ts      # Workers AI STT
+    ├── groq-stt.ts            # Groq Whisper STT
+    ├── r2-presigned.ts        # R2 presigned URL 생성
     ├── workers-ai-structure.ts # Workers AI 구조화
     ├── workers-ai-embed.ts    # Workers AI 임베딩
     └── types.ts               # 타입 정의
@@ -145,8 +149,7 @@ workers/
 app/
 ├── page.tsx                   # 홈 (녹음 페이지)
 ├── memos/
-│   ├── page.tsx               # 메모 리스트 페이지
-│   └── [id]/page.tsx          # 메모 상세 페이지
+│   └── page.tsx               # 메모 리스트 페이지 (모달로 상세 표시)
 └── search/
     └── page.tsx               # RAG 검색 페이지
 
@@ -158,16 +161,18 @@ lib/
 components/
 ├── Recorder/                  # 녹음 UI 컴포넌트
 ├── MemoList/                  # 메모 리스트 컴포넌트
-├── MemoDetail/                # 메모 상세 컴포넌트
+├── MemoCard/                  # 메모 카드 컴포넌트
+├── MemoDetailModal/           # 메모 상세 모달 (오디오 재생 포함)
 ├── ChatInterface/             # RAG 채팅 UI 컴포넌트
-├── Toast/                     # 토스트 알림
-└── hooks/                     # 커스텀 훅 (useRecorder, useTimer 등)
+├── Navbar/                    # 네비게이션 바
+└── Toast/                     # 토스트 알림
 
 .github/workflows/
 └── deploy.yml                 # CI/CD 파이프라인
 ```
 
 ## 참고 링크
+- [Groq API](https://console.groq.com/docs/speech-to-text)
 - [Cloudflare Workers AI](https://developers.cloudflare.com/workers-ai/)
 - [Cloudflare Workflows](https://developers.cloudflare.com/workflows/)
 - [Cloudflare Vectorize](https://developers.cloudflare.com/vectorize/)
