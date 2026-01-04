@@ -6,18 +6,7 @@ import { getMemos, deleteMemo } from '@/lib/api/client';
 import { MemoCard } from '@/components/MemoCard';
 import { MemoDetailModal } from '@/components/MemoDetailModal';
 import type { MemoSummary, MemoCategory } from '@/lib/types';
-
-const categories: (MemoCategory | 'all')[] = ['all', '업무', '개발', '일기', '아이디어', '학습', '기타'];
-
-const categoryLabels: Record<MemoCategory | 'all', string> = {
-  all: '전체',
-  '업무': '업무',
-  '개발': '개발',
-  '일기': '일기',
-  '아이디어': '아이디어',
-  '학습': '학습',
-  '기타': '기타',
-};
+import { CATEGORY_FILTER_OPTIONS, CATEGORY_LABELS } from '@/lib/constants/categories';
 
 function MemoSkeleton() {
   return (
@@ -127,7 +116,7 @@ export function MemoList() {
 
       {/* Category filter */}
       <div className="flex gap-3 mb-6 overflow-x-auto pb-2">
-        {categories.map((category) => (
+        {CATEGORY_FILTER_OPTIONS.map((category) => (
           <button
             key={category}
             onClick={() => handleCategoryChange(category)}
@@ -137,7 +126,7 @@ export function MemoList() {
                 : 'bg-surface-lighter text-white hover:bg-surface-dark border border-transparent hover:border-surface-lighter'
             }`}
           >
-            {categoryLabels[category]}
+            {CATEGORY_LABELS[category]}
           </button>
         ))}
       </div>
@@ -156,7 +145,7 @@ export function MemoList() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
           <p className="text-lg font-medium text-white mb-2">
-            {selectedCategory === 'all' ? '아직 메모가 없습니다' : `${categoryLabels[selectedCategory]} 카테고리에 메모가 없습니다`}
+            {selectedCategory === 'all' ? '아직 메모가 없습니다' : `${CATEGORY_LABELS[selectedCategory]} 카테고리에 메모가 없습니다`}
           </p>
           <p className="text-sm text-text-secondary">
             홈에서 음성 메모를 녹음해보세요

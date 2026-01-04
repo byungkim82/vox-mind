@@ -3,6 +3,16 @@ import { cors } from 'hono/cors';
 import type { Env, AuthContext, WorkflowResult } from './lib/types';
 import { createAuthMiddleware, getAuth } from './lib/auth-middleware';
 import { generatePresignedUrl } from './lib/r2-presigned';
+import { createErrorResponse } from './lib/error-handler';
+import {
+  MAX_FILE_SIZE_BYTES,
+  MAX_FILE_SIZE_MB,
+  PRESIGNED_URL_EXPIRY_SECONDS,
+  CHAT_MAX_TOKENS,
+  RAG_TOP_K,
+  SUPPORTED_AUDIO_PREFIXES,
+} from './lib/constants';
+import { apiLogger, ragLogger } from './lib/logger';
 
 // Export Workflow for wrangler
 export { ProcessMemoWorkflow } from './workflows/process-memo';
@@ -61,19 +71,17 @@ app.post('/api/upload', authMiddleware, async (c) => {
     }
 
     // Validate type (allow codecs suffix like audio/webm;codecs=opus)
-    const validPrefixes = ['audio/webm', 'audio/mp4', 'audio/wav', 'audio/mpeg', 'audio/m4a', 'audio/x-m4a', 'audio/aac'];
-    const isValidType = validPrefixes.some(prefix => file.type.startsWith(prefix));
+    const isValidType = SUPPORTED_AUDIO_PREFIXES.some(prefix => file.type.startsWith(prefix));
     if (!isValidType) {
       return c.json({
         error: `Invalid file type: ${file.type}. Supported: webm, mp4, wav, mpeg, m4a, aac`
       }, 400);
     }
 
-    // Validate size (50MB)
-    const MAX_SIZE = 50 * 1024 * 1024;
-    if (file.size > MAX_SIZE) {
+    // Validate size
+    if (file.size > MAX_FILE_SIZE_BYTES) {
       return c.json({
-        error: `File too large: ${(file.size / 1024 / 1024).toFixed(2)}MB. Max: 50MB`
+        error: `File too large: ${(file.size / 1024 / 1024).toFixed(2)}MB. Max: ${MAX_FILE_SIZE_MB}MB`
       }, 413);
     }
 
@@ -95,11 +103,8 @@ app.post('/api/upload', authMiddleware, async (c) => {
     });
 
   } catch (error) {
-    console.error('Upload error:', error);
-    return c.json({
-      error: 'Upload failed',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, 500);
+    apiLogger.error('Upload failed', error);
+    return createErrorResponse(c, 'Upload failed', error);
   }
 });
 
@@ -113,7 +118,7 @@ app.post('/api/process', authMiddleware, async (c) => {
     }
 
     const auth = getAuth(c);
-    console.log(`[${fileId}] Workflow 생성 중...`);
+    apiLogger.info('Workflow 생성 중...', { fileId });
 
     // Create Workflow instance
     const instance = await c.env.PROCESS_WORKFLOW.create({
@@ -124,7 +129,7 @@ app.post('/api/process', authMiddleware, async (c) => {
       },
     });
 
-    console.log(`[${fileId}] Workflow 생성 완료: ${instance.id}`);
+    apiLogger.info(`Workflow 생성 완료: ${instance.id}`, { fileId });
 
     return c.json({
       instanceId: instance.id,
@@ -133,11 +138,8 @@ app.post('/api/process', authMiddleware, async (c) => {
     });
 
   } catch (error) {
-    console.error('Process error:', error);
-    return c.json({
-      error: '처리 시작 실패',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, 500);
+    apiLogger.error('Process failed', error);
+    return createErrorResponse(c, '처리 시작 실패', error);
   }
 });
 
@@ -157,11 +159,8 @@ app.get('/api/process/:instanceId', authMiddleware, async (c) => {
     });
 
   } catch (error) {
-    console.error('Status check error:', error);
-    return c.json({
-      error: '상태 확인 실패',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, 500);
+    apiLogger.error('Status check failed', error);
+    return createErrorResponse(c, '상태 확인 실패', error);
   }
 });
 
@@ -212,11 +211,8 @@ app.get('/api/memos', authMiddleware, async (c) => {
     });
 
   } catch (error) {
-    console.error('Get memos error:', error);
-    return c.json({
-      error: '메모 목록 조회 실패',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, 500);
+    apiLogger.error('Get memos failed', error);
+    return createErrorResponse(c, '메모 목록 조회 실패', error);
   }
 });
 
@@ -243,11 +239,8 @@ app.get('/api/memos/:id', authMiddleware, async (c) => {
     return c.json(result);
 
   } catch (error) {
-    console.error('Get memo error:', error);
-    return c.json({
-      error: '메모 조회 실패',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, 500);
+    apiLogger.error('Get memo failed', error);
+    return createErrorResponse(c, '메모 조회 실패', error);
   }
 });
 
@@ -269,16 +262,13 @@ app.get('/api/memos/:id/audio', authMiddleware, async (c) => {
       return c.json({ error: '오디오 파일이 없습니다' }, 404);
     }
 
-    const audioUrl = await generatePresignedUrl(memo.audio_file_name, c.env, 3600);
+    const audioUrl = await generatePresignedUrl(memo.audio_file_name, c.env, PRESIGNED_URL_EXPIRY_SECONDS);
 
     return c.json({ audioUrl });
 
   } catch (error) {
-    console.error('Get audio URL error:', error);
-    return c.json({
-      error: '오디오 URL 생성 실패',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, 500);
+    apiLogger.error('Get audio URL failed', error);
+    return createErrorResponse(c, '오디오 URL 생성 실패', error);
   }
 });
 
@@ -306,27 +296,24 @@ app.delete('/api/memos/:id', authMiddleware, async (c) => {
     try {
       await c.env.VECTORIZE.deleteByIds([memoId]);
     } catch (vectorError) {
-      console.error('Vectorize delete error (non-fatal):', vectorError);
+      apiLogger.warn('Vectorize delete failed (non-fatal)', { fileId: memoId });
     }
 
     // Delete audio file from R2
     if (memo.audio_file_name) {
       try {
         await c.env.AUDIO_BUCKET.delete(memo.audio_file_name);
-        console.log(`R2 audio file deleted: ${memo.audio_file_name}`);
+        apiLogger.info(`R2 audio file deleted: ${memo.audio_file_name}`);
       } catch (r2Error) {
-        console.error('R2 delete error (non-fatal):', r2Error);
+        apiLogger.warn('R2 delete failed (non-fatal)', { fileId: memoId });
       }
     }
 
     return c.json({ success: true, message: '메모가 삭제되었습니다' });
 
   } catch (error) {
-    console.error('Delete memo error:', error);
-    return c.json({
-      error: '메모 삭제 실패',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, 500);
+    apiLogger.error('Delete memo failed', error);
+    return createErrorResponse(c, '메모 삭제 실패', error);
   }
 });
 
@@ -352,30 +339,23 @@ app.post('/api/chat', authMiddleware, async (c) => {
     const questionEmbedding = embeddingResponse.data[0];
 
     // Step 2: Search Vectorize for similar memos
-    console.log('[RAG] Searching with user_id:', auth.userId);
+    ragLogger.debug(`Searching with user_id: ${auth.userId}`);
 
     const searchResults = await c.env.VECTORIZE.query(questionEmbedding, {
-      topK: 5,
+      topK: RAG_TOP_K,
       filter: { user_id: auth.userId },
       returnMetadata: 'all',
     });
 
-    console.log('[RAG] Search results:', JSON.stringify({
-      count: searchResults.count,
-      matchesLength: searchResults.matches?.length || 0,
-      matches: searchResults.matches?.map(m => ({ id: m.id, score: m.score, metadata: m.metadata }))
-    }));
+    ragLogger.debug(`Search results: ${searchResults.matches?.length || 0} matches`);
 
     if (!searchResults.matches || searchResults.matches.length === 0) {
       // Debug: Try searching without filter to see if it's a filter issue
       const debugResults = await c.env.VECTORIZE.query(questionEmbedding, {
-        topK: 5,
+        topK: RAG_TOP_K,
         returnMetadata: 'all',
       });
-      console.log('[RAG] Debug search without filter:', JSON.stringify({
-        count: debugResults.count,
-        matches: debugResults.matches?.map(m => ({ id: m.id, metadata: m.metadata }))
-      }));
+      ragLogger.debug(`Debug search without filter: ${debugResults.matches?.length || 0} matches`);
 
       return c.json({
         answer: '관련된 메모를 찾을 수 없습니다. 먼저 음성 메모를 녹음해주세요.',
@@ -427,7 +407,7 @@ ${context}
 
     const llmResponse = await c.env.AI.run('@cf/meta/llama-4-scout-17b-16e-instruct', {
       messages: [{ role: 'user', content: prompt }],
-      max_tokens: 1024,
+      max_tokens: CHAT_MAX_TOKENS,
     }) as { response?: string };
 
     const answer = llmResponse.response || '답변을 생성하지 못했습니다.';
@@ -444,11 +424,8 @@ ${context}
     return c.json({ answer, sources });
 
   } catch (error) {
-    console.error('Chat error:', error);
-    return c.json({
-      error: 'AI 답변 생성 실패',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, 500);
+    ragLogger.error('Chat failed', error);
+    return createErrorResponse(c, 'AI 답변 생성 실패', error);
   }
 });
 

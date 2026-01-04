@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import type { Toast, ToastType } from '@/lib/types';
+import { TOAST_DEFAULT_DURATION_MS } from '@/lib/constants/ui';
 
 export function useToast() {
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -11,7 +12,7 @@ export function useToast() {
   }, []);
 
   const addToast = useCallback(
-    (type: ToastType, message: string, duration = 5000) => {
+    (type: ToastType, message: string, duration = TOAST_DEFAULT_DURATION_MS) => {
       const id = crypto.randomUUID();
       setToasts((prev) => [...prev, { id, type, message, duration }]);
 

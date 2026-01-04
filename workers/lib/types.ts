@@ -1,6 +1,11 @@
 // Cloudflare Workers specific types
 import type { Workflow } from 'cloudflare:workers';
 
+// Import and re-export shared types
+import type { MemoCategory as _MemoCategory } from '../../shared/types';
+export type MemoCategory = _MemoCategory;
+export { MEMO_CATEGORIES } from '../../shared/types';
+
 export interface Env {
   DB: D1Database;
   AUDIO_BUCKET: R2Bucket;
@@ -39,14 +44,6 @@ export interface AuthContext {
   userId: string;
   email: string;
 }
-
-export type MemoCategory =
-  | '업무'
-  | '개발'
-  | '일기'
-  | '아이디어'
-  | '학습'
-  | '기타';
 
 export interface MemoStructure {
   title: string;

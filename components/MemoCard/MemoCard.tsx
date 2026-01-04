@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import type { MemoSummary, MemoCategory } from '@/lib/types';
+import type { MemoSummary } from '@/lib/types';
+import { getCategoryStyles } from '@/lib/constants/categories';
+import { formatRelativeDate } from '@/lib/utils/date-format';
 
 interface MemoCardProps {
   memo: MemoSummary;
@@ -9,81 +11,11 @@ interface MemoCardProps {
   onClick?: (id: string) => void;
 }
 
-const categoryStyles: Record<MemoCategory, {
-  gradient: string;
-  badge: string;
-  dot: string;
-  hover: string;
-}> = {
-  '업무': {
-    gradient: 'bg-gradient-to-r from-blue-500 to-primary',
-    badge: 'bg-blue-500/10 text-blue-400 ring-blue-500/20',
-    dot: 'bg-blue-400',
-    hover: 'hover:border-primary/50 hover:shadow-primary/10',
-  },
-  '개발': {
-    gradient: 'bg-gradient-to-r from-purple-600 to-purple-400',
-    badge: 'bg-purple-500/10 text-purple-400 ring-purple-500/20',
-    dot: 'bg-purple-400',
-    hover: 'hover:border-purple-500/50 hover:shadow-purple-500/10',
-  },
-  '일기': {
-    gradient: 'bg-gradient-to-r from-green-600 to-green-400',
-    badge: 'bg-green-500/10 text-green-400 ring-green-500/20',
-    dot: 'bg-green-400',
-    hover: 'hover:border-green-500/50 hover:shadow-green-500/10',
-  },
-  '아이디어': {
-    gradient: 'bg-gradient-to-r from-yellow-600 to-yellow-400',
-    badge: 'bg-yellow-500/10 text-yellow-400 ring-yellow-500/20',
-    dot: 'bg-yellow-400',
-    hover: 'hover:border-yellow-500/50 hover:shadow-yellow-500/10',
-  },
-  '학습': {
-    gradient: 'bg-gradient-to-r from-emerald-600 to-emerald-400',
-    badge: 'bg-emerald-500/10 text-emerald-400 ring-emerald-500/20',
-    dot: 'bg-emerald-400',
-    hover: 'hover:border-emerald-500/50 hover:shadow-emerald-500/10',
-  },
-  '기타': {
-    gradient: 'bg-gradient-to-r from-gray-500 to-gray-400',
-    badge: 'bg-gray-500/10 text-gray-400 ring-gray-500/20',
-    dot: 'bg-gray-400',
-    hover: 'hover:border-gray-500/50 hover:shadow-gray-500/10',
-  },
-};
-
-function formatDate(dateString: string): string {
-  const date = new Date(dateString);
-  const now = new Date();
-
-  // 로컬 시간 기준으로 날짜만 비교 (시간 제외)
-  const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const nowOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-  const diffMs = nowOnly.getTime() - dateOnly.getTime();
-  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffDays <= 0) {
-    return '오늘';
-  } else if (diffDays === 1) {
-    return '어제';
-  } else if (diffDays < 7) {
-    return `${diffDays}일 전`;
-  } else {
-    return date.toLocaleDateString('ko-KR', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  }
-}
-
 export function MemoCard({ memo, onDelete, onClick }: MemoCardProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const category = memo.category || '기타';
-  const styles = categoryStyles[category] || categoryStyles['기타'];
+  const styles = getCategoryStyles(memo.category);
 
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -117,9 +49,18 @@ export function MemoCard({ memo, onDelete, onClick }: MemoCardProps) {
 
   return (
     <div className="relative group">
-      <button
+      {/* Clickable card area using div with role="button" for accessibility */}
+      <div
+        role="button"
+        tabIndex={0}
         onClick={handleClick}
-        className={`block w-full text-left bg-surface-dark rounded-2xl border border-surface-lighter overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 ${styles.hover}`}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleClick();
+          }
+        }}
+        className={`block w-full text-left bg-surface-dark rounded-2xl border border-surface-lighter overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer ${styles.hover}`}
       >
         {/* Gradient top bar */}
         <div className={`h-1.5 w-full ${styles.gradient}`} />
@@ -155,11 +96,11 @@ export function MemoCard({ memo, onDelete, onClick }: MemoCardProps) {
 
           <div className="pt-3 border-t border-surface-lighter">
             <span className="text-xs text-text-secondary/70 font-medium">
-              {formatDate(memo.created_at)}
+              {formatRelativeDate(memo.created_at)}
             </span>
           </div>
         </div>
-      </button>
+      </div>
 
       {/* Delete confirmation overlay */}
       {showConfirm && (

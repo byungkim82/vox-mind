@@ -1,10 +1,7 @@
-export type MemoCategory =
-  | '업무'
-  | '개발'
-  | '일기'
-  | '아이디어'
-  | '학습'
-  | '기타';
+// Import and re-export shared types
+import type { MemoCategory as _MemoCategory } from '../shared/types';
+export type MemoCategory = _MemoCategory;
+export { MEMO_CATEGORIES } from '../shared/types';
 
 // Recording states
 export type RecordingState = 'idle' | 'recording' | 'processing';

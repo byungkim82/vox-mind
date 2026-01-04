@@ -4,13 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { sendChatMessage } from '@/lib/api/client';
 import { MemoDetailModal } from '@/components/MemoDetailModal';
 import type { ChatMessage, ChatSource } from '@/lib/types';
-
-function formatDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString('ko-KR', {
-    month: 'short',
-    day: 'numeric',
-  });
-}
+import { formatShortDate } from '@/lib/utils/date-format';
 
 function SourceCard({ source, onClick }: { source: ChatSource; onClick: (id: string) => void }) {
   return (
@@ -29,7 +23,7 @@ function SourceCard({ source, onClick }: { source: ChatSource; onClick: (id: str
       </div>
       <div className="font-semibold text-white text-sm line-clamp-1">{source.title}</div>
       <div className="text-text-secondary text-xs mt-1">
-        {source.category} · {formatDate(source.created_at)}
+        {source.category} · {formatShortDate(source.created_at)}
       </div>
     </button>
   );

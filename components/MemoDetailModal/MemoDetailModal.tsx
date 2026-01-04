@@ -2,31 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { getMemo, deleteMemo, getAudioUrl } from '@/lib/api/client';
-import type { MemoDetail as MemoDetailType, MemoCategory } from '@/lib/types';
+import type { MemoDetail as MemoDetailType } from '@/lib/types';
+import { getCategoryBadgeStyle } from '@/lib/constants/categories';
+import { formatFullDateTime } from '@/lib/utils/date-format';
 
 interface MemoDetailModalProps {
   memoId: string | null;
   onClose: () => void;
   onDelete?: (id: string) => void;
-}
-
-const categoryStyles: Record<MemoCategory, string> = {
-  '업무': 'bg-blue-500/10 text-blue-400 ring-blue-500/20',
-  '개발': 'bg-purple-500/10 text-purple-400 ring-purple-500/20',
-  '일기': 'bg-green-500/10 text-green-400 ring-green-500/20',
-  '아이디어': 'bg-yellow-500/10 text-yellow-400 ring-yellow-500/20',
-  '학습': 'bg-emerald-500/10 text-emerald-400 ring-emerald-500/20',
-  '기타': 'bg-gray-500/10 text-gray-400 ring-gray-500/20',
-};
-
-function formatDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString('ko-KR', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
 }
 
 function ModalSkeleton() {
@@ -79,8 +62,7 @@ export function MemoDetailModal({ memoId, onClose, onDelete }: MemoDetailModalPr
             const { audioUrl } = await getAudioUrl(memoId!);
             setAudioUrl(audioUrl);
           } catch {
-            // Audio not available is not critical
-            console.log('Audio not available');
+            // Audio not available is not critical - silently ignore
           } finally {
             setAudioLoading(false);
           }
@@ -178,12 +160,12 @@ export function MemoDetailModal({ memoId, onClose, onDelete }: MemoDetailModalPr
                 </h1>
                 <div className="flex flex-wrap items-center gap-3 text-sm">
                   {memo.category && (
-                    <span className={`px-3 py-1 rounded-full font-medium ring-1 ring-inset ${categoryStyles[memo.category] || categoryStyles['기타']}`}>
+                    <span className={`px-3 py-1 rounded-full font-medium ring-1 ring-inset ${getCategoryBadgeStyle(memo.category)}`}>
                       {memo.category}
                     </span>
                   )}
                   <span className="text-text-secondary">
-                    {formatDate(memo.created_at)}
+                    {formatFullDateTime(memo.created_at)}
                   </span>
                 </div>
               </div>

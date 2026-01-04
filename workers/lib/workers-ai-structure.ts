@@ -1,4 +1,5 @@
 import type { Env, MemoStructure, LlamaResponse } from './types';
+import { STRUCTURE_MAX_TOKENS } from './constants';
 
 const SYSTEM_PROMPT = `당신은 음성 메모를 분석하는 AI 어시스턴트입니다.
 사용자가 녹음한 내용에서 핵심 정보를 추출하세요.
@@ -26,7 +27,7 @@ export async function structureWithWorkersAI(
       { role: 'system', content: SYSTEM_PROMPT },
       { role: 'user', content: `다음 음성 메모를 분석해주세요:\n\n${rawText}` },
     ],
-    max_tokens: 500,
+    max_tokens: STRUCTURE_MAX_TOKENS,
     temperature: 0.3,
   }) as LlamaResponse;
 

@@ -4,11 +4,12 @@ import { generatePresignedUrl } from '../lib/r2-presigned';
 import { transcribeWithGroq } from '../lib/groq-stt';
 import { structureWithWorkersAI } from '../lib/workers-ai-structure';
 import { embedWithWorkersAI } from '../lib/workers-ai-embed';
+import { workflowLogger } from '../lib/logger';
 
 export class ProcessMemoWorkflow extends WorkflowEntrypoint<Env, WorkflowParams> {
   async run(event: WorkflowEvent<WorkflowParams>, step: WorkflowStep) {
     const { fileId, fileName, userId } = event.payload;
-    console.log(`[${fileId}] Workflow 시작`);
+    workflowLogger.info('Workflow 시작', { fileId });
 
     // Step 1: Generate presigned URL and transcribe with Groq
     const rawText = await step.do(
@@ -19,14 +20,14 @@ export class ProcessMemoWorkflow extends WorkflowEntrypoint<Env, WorkflowParams>
       },
       async () => {
         // Generate presigned URL for R2 object
-        console.log(`[${fileId}] Presigned URL 생성 중...`);
+        workflowLogger.info('Presigned URL 생성 중...', { fileId });
         const audioUrl = await generatePresignedUrl(fileName, this.env);
-        console.log(`[${fileId}] Presigned URL 생성 완료`);
+        workflowLogger.info('Presigned URL 생성 완료', { fileId });
 
         // Transcribe with Groq Whisper Large v3 Turbo
-        console.log(`[${fileId}] Groq STT 시작...`);
+        workflowLogger.info('Groq STT 시작...', { fileId });
         const text = await transcribeWithGroq(audioUrl, this.env);
-        console.log(`[${fileId}] Groq STT 완료: ${text.length} 글자`);
+        workflowLogger.info(`Groq STT 완료: ${text.length} 글자`, { fileId });
         return text;
       }
     );
@@ -39,9 +40,9 @@ export class ProcessMemoWorkflow extends WorkflowEntrypoint<Env, WorkflowParams>
         timeout: '5 minutes',
       },
       async () => {
-        console.log(`[${fileId}] 구조화 시작...`);
+        workflowLogger.info('구조화 시작...', { fileId });
         const result = await structureWithWorkersAI(rawText, this.env);
-        console.log(`[${fileId}] 구조화 완료: "${result.title}"`);
+        workflowLogger.info(`구조화 완료: "${result.title}"`, { fileId });
         return result;
       }
     );
@@ -54,9 +55,9 @@ export class ProcessMemoWorkflow extends WorkflowEntrypoint<Env, WorkflowParams>
         timeout: '2 minutes',
       },
       async () => {
-        console.log(`[${fileId}] 임베딩 시작...`);
+        workflowLogger.info('임베딩 시작...', { fileId });
         const vector = await embedWithWorkersAI(structure.summary, this.env);
-        console.log(`[${fileId}] 임베딩 완료: ${vector.length}차원`);
+        workflowLogger.info(`임베딩 완료: ${vector.length}차원`, { fileId });
         return vector;
       }
     );
@@ -70,7 +71,7 @@ export class ProcessMemoWorkflow extends WorkflowEntrypoint<Env, WorkflowParams>
       },
       async () => {
         const id = crypto.randomUUID();
-        console.log(`[${fileId}] D1 저장 중: ${id}`);
+        workflowLogger.info(`D1 저장 중: ${id}`, { fileId });
         await this.env.DB.prepare(`
           INSERT INTO memos (id, user_id, raw_text, title, summary, category, action_items, audio_file_name)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -84,7 +85,7 @@ export class ProcessMemoWorkflow extends WorkflowEntrypoint<Env, WorkflowParams>
           JSON.stringify(structure.action_items),
           fileName
         ).run();
-        console.log(`[${fileId}] D1 저장 완료`);
+        workflowLogger.info('D1 저장 완료', { fileId });
         return id;
       }
     );
@@ -97,19 +98,19 @@ export class ProcessMemoWorkflow extends WorkflowEntrypoint<Env, WorkflowParams>
         timeout: '1 minute',
       },
       async () => {
-        console.log(`[${fileId}] Vectorize 저장 중...`);
+        workflowLogger.info('Vectorize 저장 중...', { fileId });
         await this.env.VECTORIZE.insert([{
           id: memoId,
           values: embedding,
           metadata: { memo_id: memoId, user_id: userId },
         }]);
-        console.log(`[${fileId}] Vectorize 저장 완료`);
+        workflowLogger.info('Vectorize 저장 완료', { fileId });
       }
     );
 
     // Note: R2 audio file is retained for playback (no cleanup step)
 
-    console.log(`[${fileId}] Workflow 완료`);
+    workflowLogger.info('Workflow 완료', { fileId });
 
     return {
       memoId,

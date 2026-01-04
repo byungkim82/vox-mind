@@ -1,5 +1,7 @@
 import type { Context, MiddlewareHandler } from 'hono';
 import type { Env, CloudflareAccessJWTPayload, AuthContext } from './types';
+import { AUTH_CACHE_EXPIRY_MS } from './constants';
+import { authLogger } from './logger';
 
 interface JsonWebKeySet {
   keys: JsonWebKey[];
@@ -24,7 +26,7 @@ async function getPublicKeys(teamName: string): Promise<JsonWebKeySet> {
   }
 
   cachedKeys = (await response.json()) as JsonWebKeySet;
-  cacheExpiry = now + 3600000; // 1 hour cache
+  cacheExpiry = now + AUTH_CACHE_EXPIRY_MS;
 
   return cachedKeys;
 }
@@ -127,7 +129,7 @@ export function createAuthMiddleware(): MiddlewareHandler<AppEnv> {
     const expectedAud = env.CF_ACCESS_AUD;
 
     if (!teamName || !expectedAud) {
-      console.error('CF_ACCESS_TEAM_NAME or CF_ACCESS_AUD not configured');
+      authLogger.error('CF_ACCESS_TEAM_NAME or CF_ACCESS_AUD not configured');
       return c.json({ error: 'Authentication not configured' }, 500);
     }
 
@@ -141,7 +143,7 @@ export function createAuthMiddleware(): MiddlewareHandler<AppEnv> {
 
       return next();
     } catch (error) {
-      console.error('JWT verification failed:', error);
+      authLogger.error('JWT verification failed', error);
       return c.json(
         {
           error: 'Invalid authentication token',
