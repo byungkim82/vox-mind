@@ -40,3 +40,12 @@ next-env.d.ts
 .wrangler/
 wrangler.toml.local
 .claude/settings.local.json
+
+# Oh My OpenCode
+.omc/
+
+# Claude Code
+.claude/settgings.local.json
+
+# JetBrains IDEs
+.idea/

@@ -21,6 +21,7 @@ export interface Env {
   PROCESS_WORKFLOW: Workflow;
   // Groq STT
   GROQ_API_KEY: string;
+  OPENAI_API_KEY: string;
   // R2 Presigned URL 생성용
   CLOUDFLARE_ACCOUNT_ID: string;
   R2_ACCESS_KEY_ID: string;
