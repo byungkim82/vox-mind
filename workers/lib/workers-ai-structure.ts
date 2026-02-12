@@ -1,4 +1,4 @@
-import type { Env, MemoStructure, LlamaResponse } from './types';
+import type { Env, MemoStructure } from './types';
 import { STRUCTURE_MAX_TOKENS } from './constants';
 
 const SYSTEM_PROMPT = `당신은 음성 메모를 분석하는 AI 어시스턴트입니다.
@@ -18,32 +18,52 @@ const SYSTEM_PROMPT = `당신은 음성 메모를 분석하는 AI 어시스턴�
   "action_items": ["할 일 1", "할 일 2"]
 }`;
 
+interface OpenAIResponse {
+  choices: Array<{
+    message: {
+      content: string;
+    };
+  }>;
+}
+
 export async function structureWithWorkersAI(
   rawText: string,
   env: Env
 ): Promise<MemoStructure> {
-  const response = await env.AI.run('@cf/meta/llama-4-scout-17b-16e-instruct', {
-    messages: [
-      { role: 'system', content: SYSTEM_PROMPT },
-      { role: 'user', content: `다음 음성 메모를 분석해주세요:\n\n${rawText}` },
-    ],
-    max_tokens: STRUCTURE_MAX_TOKENS,
-    temperature: 0.3,
-  }) as LlamaResponse;
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${env.OPENAI_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: `다음 음성 메모를 분석해주세요:\n\n${rawText}` },
+      ],
+      max_tokens: STRUCTURE_MAX_TOKENS,
+      temperature: 0.3,
+      response_format: { type: 'json_object' },
+    }),
+  });
 
-  const text = response.response || '';
-
-  // Extract JSON from markdown code blocks or direct JSON
-  const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/) || text.match(/\{[\s\S]*\}/);
-
-  if (!jsonMatch) {
-    throw new Error('Workers AI Structure: JSON 추출 실패');
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`OpenAI Structure 실패: ${response.status} - ${errorText}`);
   }
 
-  const parsed = JSON.parse(jsonMatch[1] || jsonMatch[0]) as MemoStructure;
+  const result = (await response.json()) as OpenAIResponse;
+  const content = result.choices?.[0]?.message?.content;
+
+  if (!content) {
+    throw new Error('OpenAI Structure: 응답 내용 없음');
+  }
+
+  const parsed = JSON.parse(content) as MemoStructure;
 
   if (!parsed.title || !parsed.summary || !parsed.category) {
-    throw new Error('Workers AI Structure: 필수 필드 누락');
+    throw new Error('OpenAI Structure: 필수 필드 누락');
   }
 
   return parsed;
